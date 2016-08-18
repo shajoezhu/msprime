@@ -3323,6 +3323,13 @@ handle_cunit_error()
     exit(EXIT_FAILURE);
 }
 
+
+static void
+joe_first_test(void)
+{
+    fprintf(stderr, "Joe's first test");
+}
+
 int
 main(void)
 {
@@ -3380,6 +3387,7 @@ main(void)
         {"Bottleneck simulation", test_bottleneck_simulation},
         {"Large bottleneck simulation", test_large_bottleneck_simulation},
         {"Test error messages", test_strerror},
+        {"Test Joe's lambda parameter function", joe_first_test},
         CU_TEST_INFO_NULL,
     };
 
