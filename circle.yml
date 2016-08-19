@@ -1,0 +1,14 @@
+## Customize dependencies
+dependencies:
+  pre:
+    - sudo apt-get update
+  override:
+    - sudo apt-get install libgsl0-dev
+    - sudo apt-get install libhdf5-serial-dev
+    - sudo apt-get install libcunit1-dev
+    - sudo apt-get install r-base-core
+test:
+  override:
+    - make -C lib main tests
+    - lib/tests
+    - lib/main lib/devSimple.cfg
