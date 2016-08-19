@@ -706,10 +706,10 @@ test_simulator_getters_setters(void)
             msp_set_scaled_recombination_rate(&msp, -1),
             MSP_ERR_BAD_PARAM_VALUE);
     CU_ASSERT_EQUAL(
-            msp_set_population_configuration(&msp, -1, 0, 0, 0),
+            msp_set_population_configuration(&msp, -1, 0.0, 0.0, 0.0),
             MSP_ERR_BAD_POPULATION_ID);
     CU_ASSERT_EQUAL(
-            msp_set_population_configuration(&msp, 3, 0, 0, 0),
+            msp_set_population_configuration(&msp, 3, 0.0, 0.0, 0.0),
             MSP_ERR_BAD_POPULATION_ID);
 
     ret = msp_set_num_populations(&msp, 2);
@@ -717,7 +717,7 @@ test_simulator_getters_setters(void)
     CU_ASSERT_EQUAL(
             msp_get_population_configuration(&msp, 3, NULL, NULL),
             MSP_ERR_BAD_POPULATION_ID);
-    ret = msp_set_population_configuration(&msp, 0, 2, 0.5, 0);
+    ret = msp_set_population_configuration(&msp, 0, 2.0, 0.5, 0.0);
     CU_ASSERT_EQUAL(ret, 0);
 
     CU_ASSERT_EQUAL(
@@ -821,9 +821,9 @@ test_simulator_demographic_events(void)
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_set_num_populations(&msp, 2);
     CU_ASSERT_EQUAL(ret, 0);
-    ret = msp_set_population_configuration(&msp, 0, 1, 1, 0);
+    ret = msp_set_population_configuration(&msp, 0, 1.0, 1.0, 0.0);
     CU_ASSERT_EQUAL(ret, 0);
-    ret = msp_set_population_configuration(&msp, 1, 2, 2, 0);
+    ret = msp_set_population_configuration(&msp, 1, 2.0, 2.0, 0.0);
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_set_migration_matrix(&msp, 4, migration_matrix);
     CU_ASSERT_EQUAL(ret, 0);
