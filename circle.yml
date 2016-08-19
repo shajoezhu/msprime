@@ -6,6 +6,7 @@ dependencies:
     - sudo apt-get install libgsl0-dev
     - sudo apt-get install libhdf5-serial-dev
     - sudo apt-get install libcunit1-dev
+    - sudo apt-get install libconfig-dev
     - sudo apt-get install r-base-core
 test:
   override:
