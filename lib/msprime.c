@@ -25,6 +25,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics_int.h>
+#include <gsl/gsl_sf.h>
 
 #include <hdf5.h>
 
@@ -344,7 +345,7 @@ out:
 
 int
 msp_set_population_configuration(msp_t *self, int population_id,
-        double initial_size, double growth_rate)
+        double initial_size, double growth_rate, double multiple_merger_rate)
 {
     int ret = MSP_ERR_BAD_POPULATION_CONFIGURATION;
 
@@ -354,6 +355,8 @@ msp_set_population_configuration(msp_t *self, int population_id,
     }
     self->initial_populations[population_id].initial_size = initial_size;
     self->initial_populations[population_id].growth_rate = growth_rate;
+    self->initial_populations[population_id].multiple_merger_rate =
+        multiple_merger_rate;
     ret = 0;
 out:
     return ret;
@@ -1023,6 +1026,8 @@ msp_print_state(msp_t *self, FILE *out)
         fprintf(out, "\tstart_time = %f\n", self->populations[j].start_time);
         fprintf(out, "\tinitial_size = %f\n", self->populations[j].initial_size);
         fprintf(out, "\tgrowth_rate = %f\n", self->populations[j].growth_rate);
+        fprintf(out, "\tmultiple_merger_rate = %f\n",
+                self->populations[j].multiple_merger_rate);
     }
     fprintf(out, "Time = %f\n", self->time);
     for (j = 0; j < msp_get_num_ancestors(self); j++) {
@@ -1852,6 +1857,7 @@ msp_reset(msp_t *self)
         initial_pop = &self->initial_populations[population_id];
         pop->growth_rate = initial_pop->growth_rate;
         pop->initial_size = initial_pop->initial_size;
+        pop->multiple_merger_rate = initial_pop->multiple_merger_rate;
         pop->start_time = 0.0;
     }
     /* Set up the sample */
@@ -2006,8 +2012,9 @@ int WARN_UNUSED
 msp_run(msp_t *self, double max_time, unsigned long max_events)
 {
     int ret = 0;
-    double lambda, t_temp, t_wait, ca_t_wait, re_t_wait, mig_t_wait,
-           sampling_event_time, demographic_event_time;
+    double lambda, t_temp, t_wait, ca_t_wait, lambda_ca_t_wait,
+           re_t_wait, mig_t_wait, sampling_event_time,
+           demographic_event_time;
     int64_t num_links;
     uint32_t j, k, n;
     uint32_t ca_pop_id, mig_source_pop, mig_dest_pop;
@@ -2036,15 +2043,22 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
             re_t_wait = gsl_ran_exponential(self->rng, 1.0 / lambda);
         }
         /* Common ancestors */
+                /* now need to also consider the case of Lambda coalescent common ancestors */
+
         ca_t_wait = DBL_MAX;
         ca_pop_id = 0;
         for (j = 0; j < self->num_populations; j++) {
+
+            // check the coalescent parameter for this population, whether it is a kingman coalescent or it is a lambda coalescent...
             t_temp = msp_get_common_ancestor_waiting_time(self, j);
+
             if (t_temp < ca_t_wait) {
                 ca_t_wait = t_temp;
                 ca_pop_id = j;
             }
         }
+        lambda_ca_t_wait = DBL_MAX;
+
         /* Migration */
         mig_t_wait = DBL_MAX;
         mig_source_pop = 0;
@@ -2069,7 +2083,7 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 }
             }
         }
-        t_wait = GSL_MIN(GSL_MIN(re_t_wait, ca_t_wait), mig_t_wait);
+        t_wait = GSL_MIN(GSL_MIN(re_t_wait, GSL_MIN(lambda_ca_t_wait, ca_t_wait)), mig_t_wait);
         if (self->next_demographic_event == NULL
                 && self->next_sampling_event == self->num_sampling_events
                 && t_wait == DBL_MAX) {
@@ -2399,11 +2413,13 @@ msp_print_population_parameters_change(msp_t *self,
         demographic_event_t *event, FILE *out)
 {
     fprintf(out,
-            "%f\tpopulation_parameters_change: %d -> initial_size=%f, growth_rate=%f\n",
+            "%f\tpopulation_parameters_change: %d -> initial_size=%f, "
+            "growth_rate=%f, multiple_merger_rate=%f\n",
             event->time,
             event->params.population_parameters_change.population_id,
             event->params.population_parameters_change.initial_size,
-            event->params.population_parameters_change.growth_rate);
+            event->params.population_parameters_change.growth_rate,
+            event->params.population_parameters_change.multiple_merger_rate);
 }
 
 int
@@ -2699,3 +2715,14 @@ out:
 }
 
 
+double
+joe_compute_lambdaAlpha(double b, double k, double para)
+{
+    assert ( b >= k );
+    assert ( k > 1 );
+
+    double ret = gsl_sf_exp( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
+ gsl_sf_lnbeta(k - para, b-k + para) -
+ gsl_sf_lnbeta( 2.0 - para, para ));
+    return ret;
+}

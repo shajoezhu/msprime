@@ -107,6 +107,7 @@ typedef struct {
     double initial_size;
     double growth_rate;
     double start_time;
+    double multiple_merger_rate;
     avl_tree_t ancestors;
 } population_t;
 
@@ -173,6 +174,7 @@ typedef struct {
     int population_id;
     double initial_size;
     double growth_rate;
+    double multiple_merger_rate;
 } population_parameters_change_t;
 
 typedef struct {
@@ -409,7 +411,7 @@ int msp_set_sample_configuration(msp_t *self, size_t num_populations,
 int msp_set_migration_matrix(msp_t *self, size_t size,
         double *migration_matrix);
 int msp_set_population_configuration(msp_t *self, int population_id,
-        double initial_size, double growth_rate);
+        double initial_size, double growth_rate, double multiple_merger_rate);
 
 int msp_add_population_parameters_change(msp_t *self, double time,
         int population_id, double size, double growth_rate);
@@ -575,4 +577,5 @@ void mutgen_print_state(mutgen_t *self, FILE *out);
 
 const char * msp_strerror(int err);
 
+double joe_compute_lambdaAlpha(double b, double k, double para);
 #endif /*__MSPRIME_H__*/

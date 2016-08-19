@@ -102,7 +102,7 @@ read_population_configuration(msp_t *msp, config_t *config)
 {
     int ret = 0;
     int j;
-    double growth_rate, initial_size;
+    double growth_rate, initial_size, multiple_merger_rate;
     int num_populations;
     config_setting_t *s, *t;
     config_setting_t *setting = config_lookup(config, "population_configuration");
@@ -136,8 +136,13 @@ read_population_configuration(msp_t *msp, config_t *config)
             fatal_error("initial_size not specified");
         }
         initial_size = config_setting_get_float(t);
+        t = config_setting_get_member(s, "multiple_merger_rate");
+        if (t == NULL) {
+            fatal_error("multiple_merger_rate not specified");
+        }
+        multiple_merger_rate = config_setting_get_float(t);
         ret = msp_set_population_configuration(msp, j, initial_size,
-                growth_rate);
+                growth_rate, multiple_merger_rate);
         if (ret != 0) {
             goto out;
         }
@@ -854,23 +859,38 @@ run_simulate(char *conf_file)
     }
     tree_sequence_print_state(tree_seq, stdout);
 
-    for (j = 0; j < 1; j++) {
-        ret = tree_sequence_dump(tree_seq, output_file, 0);
-        if (ret != 0) {
-            goto out;
-        }
-        tree_sequence_free(tree_seq);
-        memset(tree_seq, 0, sizeof(tree_sequence_t));
-        printf("READING \n");
-        ret = tree_sequence_load(tree_seq, output_file, 0);
-        if (ret != 0) {
-            goto out;
-        }
-        tree_sequence_print_state(tree_seq, stdout);
+    ret = mutgen_alloc(mutgen, tree_seq, mutation_params.mutation_rate, rng);
+    if (ret != 0) {
+        goto out;
+    }
+    ret = mutgen_generate(mutgen);
+    if (ret != 0) {
+        goto out;
+    }
+    ret = tree_sequence_set_mutations(tree_seq, mutgen->num_mutations,
+            mutgen->mutations);
+    if (ret != 0) {
+        goto out;
     }
 
+    print_haplotypes(tree_seq);
 
     if (0) {
+
+        for (j = 0; j < 1; j++) {
+            ret = tree_sequence_dump(tree_seq, output_file, 0);
+            if (ret != 0) {
+                goto out;
+            }
+            tree_sequence_free(tree_seq);
+            memset(tree_seq, 0, sizeof(tree_sequence_t));
+            printf("READING \n");
+            ret = tree_sequence_load(tree_seq, output_file, 0);
+            if (ret != 0) {
+                goto out;
+            }
+            tree_sequence_print_state(tree_seq, stdout);
+        }
         ret = mutgen_alloc(mutgen, tree_seq, mutation_params.mutation_rate, rng);
         if (ret != 0) {
             goto out;
@@ -915,7 +935,6 @@ run_simulate(char *conf_file)
 
         print_newick_trees(tree_seq);
         print_tree_sequence(tree_seq);
-        print_haplotypes(tree_seq);
 
         tree_sequence_print_state(tree_seq, stdout);
         print_haplotypes(tree_seq);

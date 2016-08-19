@@ -63,4 +63,6 @@
 
 #define MSP_ERR_use_for_next_err_code1                              -5
 #define MSP_ERR_use_for_next_err_code2                              -15
+
+#define MSP_ERR_JOE_testing                                         -40 // Joe's testing errors starts from -40
 #endif /*__ERR_H__*/
