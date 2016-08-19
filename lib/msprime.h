@@ -103,6 +103,7 @@ typedef struct {
     double time;
 } sample_t;
 
+/*! \brief Population parameters: initial_size, growth_rate, multiple_merger_rate at start_time */
 typedef struct {
     double initial_size;
     double growth_rate;

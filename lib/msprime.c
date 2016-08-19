@@ -273,6 +273,12 @@ out:
     return ret;
 }
 
+/*! \brief Initialize the poulation configuration to default values
+ * \param growth_rate = 0.0
+ * \param initial_size = 1.0
+ * \param multiple_merger_rate = 2.0
+ * \param start_time = 0.0
+ */
 int
 msp_set_num_populations(msp_t *self, size_t num_populations)
 {
@@ -322,6 +328,7 @@ msp_set_num_populations(msp_t *self, size_t num_populations)
         /* Set the default sizes and growth rates. */
         self->initial_populations[j].growth_rate = 0.0;
         self->initial_populations[j].initial_size = 1.0;
+        self->initial_populations[j].multiple_merger_rate = 2.0;
         self->initial_populations[j].start_time = 0.0;
     }
 out:
@@ -343,6 +350,7 @@ out:
     return ret;
 }
 
+/*! \brief Set the poulation configuration from given parameters*/
 int
 msp_set_population_configuration(msp_t *self, int population_id,
         double initial_size, double growth_rate, double multiple_merger_rate)
@@ -464,8 +472,7 @@ out:
     return ret;
 }
 
-/* Top level allocators and initialisation */
-
+/*! \brief Top level allocators and initialisation */
 int
 msp_alloc(msp_t *self, size_t sample_size, sample_t *samples, gsl_rng *rng)
 {
@@ -603,8 +610,8 @@ out:
     return ret;
 }
 
-/*
- * Returns true if the simulation has completed.
+/*! \brief Check if the simulation has completed.
+ * \return true if it is completed
  */
 int
 msp_is_completed(msp_t *self)
