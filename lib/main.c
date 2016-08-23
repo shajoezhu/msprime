@@ -519,6 +519,18 @@ out:
     }
 }
 
+
+static void
+print_positions(tree_sequence_t *ts){
+    printf("positions:");
+    size_t j;
+    for ( j = 0; j < ts->num_mutations; j++){
+        printf(" %f", ts->mutations.position[j]/ts->sequence_length);
+    }
+
+    printf("\n");
+}
+
 static void
 print_haplotypes(tree_sequence_t *ts)
 {
@@ -658,7 +670,7 @@ print_newick_trees(tree_sequence_t *ts)
     double length;
     char *tree;
 
-    printf("converting newick trees\n");
+    //printf("converting newick trees\n");
     if (nc == NULL) {
         ret = MSP_ERR_NO_MEMORY;
         goto out;
@@ -669,8 +681,9 @@ print_newick_trees(tree_sequence_t *ts)
         goto out;
     }
     while ((ret = newick_converter_next(nc, &length, &tree)) == 1) {
-        printf("Tree: %f: %s\n", length, tree);
-        newick_converter_print_state(nc, stdout);
+        //printf("Tree: %f: %s\n", length, tree);
+        printf("%s\n", tree);
+        //newick_converter_print_state(nc, stdout);
     }
     if (ret != 0) {
         goto out;
@@ -828,7 +841,7 @@ run_simulate(char *conf_file)
     if (ret != 0) {
         goto out;
     }
-    printf("msprime %d %d\n", msp->sample_size, num_repeat);
+    printf("msprime %d %d\n\n", msp->sample_size, num_repeat);
 
     for (j = 0; j < num_repeat; j++) {
         ret = msp_reset(msp);
@@ -855,6 +868,7 @@ run_simulate(char *conf_file)
         /* Create the tree_sequence from the state of the simulator.
          * We want to use coalescent time here, so use an Ne of 1/4
          * to cancel scaling factor. */
+        //ret = tree_sequence_create(tree_seq, msp, recomb_map, 0.25);
         ret = tree_sequence_create(tree_seq, msp, recomb_map, 0.25);
         if (ret != 0) {
             goto out;
@@ -865,6 +879,7 @@ run_simulate(char *conf_file)
         //}
 
         ret = mutgen_alloc(mutgen, tree_seq, mutation_params.mutation_rate, rng);
+        //printf(" mutation_params.mutation_rate  = %f\n", (double)mutation_params.mutation_rate);
         if (ret != 0) {
             goto out;
         }
@@ -877,10 +892,10 @@ run_simulate(char *conf_file)
         if (ret != 0) {
             goto out;
         }
-
+        print_newick_trees(tree_seq);
         //tree_sequence_print_state(tree_seq, stdout); // Need to set mutations, before print
-        printf("segsites: %d\npositions:\n", (int) mutgen->num_mutations);
-
+        printf("segsites: %d\n", (int) mutgen->num_mutations);
+        print_positions(tree_seq);
         print_haplotypes(tree_seq);
     }
 
