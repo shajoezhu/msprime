@@ -1,0 +1,56 @@
+foo(){
+    cat ${program1}tmrca > ${program1}data
+    cat ${program2}tmrca > ${program2}data
+    R --slave "--args "TMRCA" ${case} ${program1} ${program2} " < ../ks.r
+
+    cat ${program1}bl > ${program1}data
+    cat ${program2}bl > ${program2}data
+    R --slave "--args "TotalBL" ${case} ${program1} ${program2} " < ../ks.r
+
+    cut -f 4 ${program1}_stats > ${program1}data
+    cut -f 4 ${program2}_stats > ${program2}data
+    R --slave "--args "SS" ${case} ${program1} ${program2} " < ../ks.r
+
+    cut -f 6 ${program1}_stats > ${program1}data
+    cut -f 6 ${program2}_stats > ${program2}data
+    R --slave "--args "Tajima_D" ${case} ${program1} ${program2} " < ../ks.r
+
+    cut -f 2 ${program1}_stats > ${program1}data
+    cut -f 2 ${program2}_stats > ${program2}data
+    R --slave "--args "Pairewise_difference" ${case} ${program1} ${program2} " < ../ks.r
+
+    cut -f 8 ${program1}_stats > ${program1}data
+    cut -f 8 ${program2}_stats > ${program2}data
+    R --slave "--args "theta_H" ${case} ${program1} ${program2} " < ../ks.r
+
+    cut -f 10 ${program1}_stats > ${program1}data
+    cut -f 10 ${program2}_stats > ${program2}data
+    R --slave "--args "H" ${case} ${program1} ${program2} " < ../ks.r
+
+    #pdfunite ${CURRENTCASE}BL.pdf  ${CURRENTCASE}TMRCA.pdf ${CURRENTCASE}SS.pdf ${CURRENTCASE}H.pdf ${CURRENTCASE}Pairewise_difference.pdf ${CURRENTCASE}Tajima_D.pdf ${CURRENTCASE}theta_H.pdf ${CURRENTCASE}.pdf
+    #rm ${CURRENTCASE}SS.pdf ${CURRENTCASE}BL.pdf ${CURRENTCASE}H.pdf ${CURRENTCASE}Pairewise_difference.pdf ${CURRENTCASE}Tajima_D.pdf ${CURRENTCASE}theta_H.pdf ${CURRENTCASE}TMRCA.pdf
+
+}
+
+
+rearrange_hybridLambdaout(){
+    rm hybridLambdaout
+    echo -e "hybridLambda $1 ${nRepeat}\n1 1 1" > hybridLambdaout
+    for i in $(seq 1 1 ${nRepeat})
+        do
+        echo -e "\n//" >> hybridLambdaout
+        num_seg=$(cut -f 3 hybridLambda_Si_table | head -$(expr ${i} + 1) | tail -1)
+        echo "segsites: ${num_seg} " >> hybridLambdaout
+        if [ ${num_seg} != 0 ]; then
+            #echo -n "positions:">> hybridLambdaout
+            #for j in $(seq 1 ${num_seg})
+                #do
+                   #echo -n " " $( echo "scale=5; ${j}/${num_seg}" | bc ) >> hybridLambdaout
+                #done
+            #echo "" >> hybridLambdaout
+            echo positions: $(seq 1 $((num_seg))) >> hybridLambdaout
+            cut -f 2 hybridLambdaseg_sites/site${i} >> hybridLambdaout
+        fi
+        done
+    cat hybridLambdaout | sample_stats > hybridLambda_stats
+}

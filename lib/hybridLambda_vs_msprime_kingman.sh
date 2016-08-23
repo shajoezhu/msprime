@@ -23,14 +23,13 @@ echo "num_repeat = ${nRepeat};" >> tmp.cfg
 echo "recombination_map = ([0.0, 0.0], [${nLoci}.0, 0.0]);"  >> tmp.cfg
 
 case="simple"
-program1="ms"
+program1="hybridLambda"
 program2="msprime"
 
+# Note that hybrid-Lambda scale branch length by 2Ne rather than 4Ne.
+hybrid-Lambda -spcu "(A:0,B:0);" -S 5 5 -num ${nRepeat} -o ${program1} -tmrca -bl -mu 0.001 -seg -sim_Si_num
 
-ms $( grep "{ population = 0; time = 0.0; }" tmp.cfg | wc -l | cut -f1 -d' ') ${nRepeat} -T -t ${msMutationRate} -r 0 ${nLoci} -seed 1 1 1 > msOut
-cat ${program1}Out | sample_stats > ${program1}_stats
-grep ";" ${program1}Out > ${program1}Gt
-hybrid-Lambda -gt ${program1}Gt -o ${program1} -tmrca -bl
+rearrange_hybridLambdaout ${nLoci}
 
 ../main tmp.cfg > ${program2}Out
 cat ${program2}Out | sample_stats > ${program2}_stats

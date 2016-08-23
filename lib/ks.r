@@ -23,7 +23,8 @@ program.2.data = read.table( paste( program.2, "data", sep="" ))$V1;
 
 test = ks.test( program.1.data, program.2.data )
 
-pdf( paste( currentcase, figuretitle, ".pdf", sep="" ), width=14, height=7);
+#pdf( paste( currentcase, figuretitle, ".pdf", sep="" ), width=14, height=7);
+png( paste( currentcase, figuretitle, ".png", sep="" ), width=1400, height=700);
 
 par(mfrow = c(1,2))
 
