@@ -91,6 +91,12 @@ msp_strerror(int err)
         ret = "Operation cannot be performed in current configuration";
     } else if (err == MSP_ERR_BAD_POPULATION_CONFIGURATION) {
         ret = "Bad population configuration provided.";
+    } else if (err == MSP_ERR_BAD_POPULATION_CONFIGURATION_INITIAL_SIZE) {
+        ret = "Bad population configuration (initial_size) provided.";
+    } else if (err == MSP_ERR_BAD_POPULATION_CONFIGURATION_GROWTH_RATE) {
+        ret = "Bad population configuration (growth_rate) provided.";
+    } else if (err == MSP_ERR_BAD_POPULATION_CONFIGURATION_MULTI_MERGR_PARA) {
+        ret = "Bad population configuration (multiple_merger_para) provided.";
     } else if (err == MSP_ERR_BAD_POPULATION_ID) {
         ret = "Bad population id provided.";
     } else if (err == MSP_ERR_BAD_MIGRATION_MATRIX) {
@@ -276,7 +282,7 @@ out:
 /*! \brief Initialize the poulation configuration to default values
  * \param growth_rate = 0.0
  * \param initial_size = 1.0
- * \param multiple_merger_rate = 2.0
+ * \param multiple_merger_para = 2.0
  * \param start_time = 0.0
  */
 int
@@ -328,7 +334,7 @@ msp_set_num_populations(msp_t *self, size_t num_populations)
         /* Set the default sizes and growth rates. */
         self->initial_populations[j].growth_rate = 0.0;
         self->initial_populations[j].initial_size = 1.0;
-        self->initial_populations[j].multiple_merger_rate = 2.0;
+        self->initial_populations[j].multiple_merger_para = 2.0;
         self->initial_populations[j].start_time = 0.0;
     }
 out:
@@ -353,7 +359,7 @@ out:
 /*! \brief Set the poulation configuration from given parameters*/
 int
 msp_set_population_configuration(msp_t *self, int population_id,
-        double initial_size, double growth_rate, double multiple_merger_rate)
+        double initial_size, double growth_rate, double multiple_merger_para)
 {
     int ret = MSP_ERR_BAD_POPULATION_CONFIGURATION;
 
@@ -361,10 +367,26 @@ msp_set_population_configuration(msp_t *self, int population_id,
         ret = MSP_ERR_BAD_POPULATION_ID;
         goto out;
     }
+
+    if ( initial_size < 0.0 ){
+        ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_INITIAL_SIZE;
+        goto out;
+    }
+
+    if ( growth_rate < 0.0 ){
+        ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_GROWTH_RATE;
+        goto out;
+    }
+
+    if ( multiple_merger_para < 0.0 || multiple_merger_para > 2.0 ){
+        ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_MULTI_MERGR_PARA;
+        goto out;
+    }
+
     self->initial_populations[population_id].initial_size = initial_size;
     self->initial_populations[population_id].growth_rate = growth_rate;
-    self->initial_populations[population_id].multiple_merger_rate =
-        multiple_merger_rate;
+    self->initial_populations[population_id].multiple_merger_para =
+        multiple_merger_para;
     ret = 0;
 out:
     return ret;
@@ -1033,8 +1055,8 @@ msp_print_state(msp_t *self, FILE *out)
         fprintf(out, "\tstart_time = %f\n", self->populations[j].start_time);
         fprintf(out, "\tinitial_size = %f\n", self->populations[j].initial_size);
         fprintf(out, "\tgrowth_rate = %f\n", self->populations[j].growth_rate);
-        fprintf(out, "\tmultiple_merger_rate = %f\n",
-                self->populations[j].multiple_merger_rate);
+        fprintf(out, "\tmultiple_merger_para = %f\n",
+                self->populations[j].multiple_merger_para);
     }
     fprintf(out, "Time = %f\n", self->time);
     for (j = 0; j < msp_get_num_ancestors(self); j++) {
@@ -1864,7 +1886,7 @@ msp_reset(msp_t *self)
         initial_pop = &self->initial_populations[population_id];
         pop->growth_rate = initial_pop->growth_rate;
         pop->initial_size = initial_pop->initial_size;
-        pop->multiple_merger_rate = initial_pop->multiple_merger_rate;
+        pop->multiple_merger_para = initial_pop->multiple_merger_para;
         pop->start_time = 0.0;
     }
     /* Set up the sample */
@@ -2421,12 +2443,12 @@ msp_print_population_parameters_change(msp_t *self,
 {
     fprintf(out,
             "%f\tpopulation_parameters_change: %d -> initial_size=%f, "
-            "growth_rate=%f, multiple_merger_rate=%f\n",
+            "growth_rate=%f, multiple_merger_para=%f\n",
             event->time,
             event->params.population_parameters_change.population_id,
             event->params.population_parameters_change.initial_size,
             event->params.population_parameters_change.growth_rate,
-            event->params.population_parameters_change.multiple_merger_rate);
+            event->params.population_parameters_change.multiple_merger_para);
 }
 
 int

@@ -102,7 +102,7 @@ read_population_configuration(msp_t *msp, config_t *config)
 {
     int ret = 0;
     int j;
-    double growth_rate, initial_size, multiple_merger_rate;
+    double growth_rate, initial_size, multiple_merger_para;
     int num_populations;
     config_setting_t *s, *t;
     config_setting_t *setting = config_lookup(config, "population_configuration");
@@ -136,13 +136,13 @@ read_population_configuration(msp_t *msp, config_t *config)
             fatal_error("initial_size not specified");
         }
         initial_size = config_setting_get_float(t);
-        t = config_setting_get_member(s, "multiple_merger_rate");
+        t = config_setting_get_member(s, "multiple_merger_para");
         if (t == NULL) {
-            fatal_error("multiple_merger_rate not specified");
+            fatal_error("multiple_merger_para not specified");
         }
-        multiple_merger_rate = config_setting_get_float(t);
+        multiple_merger_para = config_setting_get_float(t);
         ret = msp_set_population_configuration(msp, j, initial_size,
-                growth_rate, multiple_merger_rate);
+                growth_rate, multiple_merger_para);
         if (ret != 0) {
             goto out;
         }
