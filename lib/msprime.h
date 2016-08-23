@@ -168,6 +168,7 @@ typedef struct {
     size_t max_coalescence_records;
     size_t coalescence_record_block_size;
     size_t num_coalescence_record_blocks;
+    double coal_rate;
 } msp_t;
 
 /* Demographic events */
@@ -578,5 +579,8 @@ void mutgen_print_state(mutgen_t *self, FILE *out);
 
 const char * msp_strerror(int err);
 
-double joe_compute_lambdaAlpha(double b, double k, double para);
+double msp_compute_lambda_alpha(double b, double k, double para);
+double msp_compute_lambda_psi(double b, double k, double para);
+double msp_compute_lambda_coal_rate ( double b, double para );
+int msp_get_k_of_k_merger (msp_t *self, uint32_t population_id);
 #endif /*__MSPRIME_H__*/

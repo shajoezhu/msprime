@@ -1,5 +1,5 @@
 
-mutation_rate = 0.2
+mutation_rate = 2.0
 # Number of items that we allocate at once for each type.
 avl_node_block_size = 100;
 node_mapping_block_size = 1000;
@@ -42,6 +42,3 @@ demographic_events = (
 random_seed = 878638576;
 
 # Development config file
-num_loci = 10;
-num_repeat = 1;
-recombination_map = ([0.0, 0.0], [10.0, 0.0]);

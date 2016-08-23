@@ -494,6 +494,13 @@ out:
     return ret;
 }
 
+static void
+msp_set_coal_rate(msp_t *self, double coal_rate)
+{
+    assert( coal_rate >= 0.0 );
+    self->coal_rate = coal_rate;
+}
+
 /*! \brief Top level allocators and initialisation */
 int
 msp_alloc(msp_t *self, size_t sample_size, sample_t *samples, gsl_rng *rng)
@@ -1957,6 +1964,59 @@ out:
     return ret;
 }
 
+
+double
+msp_compute_lambda_alpha ( double b, double k, double para)
+{
+    assert ( b >= k );
+    assert ( k > 1 );
+
+    double ret = gsl_sf_exp( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
+                             gsl_sf_lnbeta(k - para, b-k + para) -
+                             gsl_sf_lnbeta( 2.0 - para, para ));
+    return ret;
+}
+
+
+double
+msp_compute_lambda_psi ( double b, double k, double para)
+{
+    assert ( b >= k );
+    assert ( k > 1.0 );
+
+    //.2 is psi lambda_bk=\binom{b}{k}\psi^{k-2} (1-\psi)^{b-k}
+    if ( para == 1.0 && (int)b == (int)k ){
+        return 1.0;
+    } else if ( para == 1.0 && (int)b != (int)k ){
+        return 0.0;
+    } else if ( para == 0.0 && k == 2.0 ){
+        return gsl_sf_choose((unsigned int) b, (unsigned int)k);
+    } else if ( para == 0.0 && k != 2.0 ){
+        return 0.0;
+    } else {
+        return gsl_sf_exp ( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
+                            (k-2) * log(para) +
+                            (b-k)*log(1.0-para) );
+    }
+}
+
+
+double
+msp_compute_lambda_coal_rate ( double b, double para )
+{
+    double ret = 0.0;
+    int i;
+    for ( i = 2; i < (int)b; i++ ){
+        if ( para > 1.0 ){
+            ret += msp_compute_lambda_alpha ( b, (double)i, para );
+        } else {
+            ret += msp_compute_lambda_psi ( b, (double)i, para );
+        }
+    }
+    return ret;
+}
+
+
 static double
 msp_get_common_ancestor_waiting_time(msp_t *self, uint32_t population_id)
 {
@@ -1966,11 +2026,18 @@ msp_get_common_ancestor_waiting_time(msp_t *self, uint32_t population_id)
     double n = (double) avl_count(&pop->ancestors);
     double lambda = n * (n - 1.0);
     double alpha = pop->growth_rate;
+    double multiple_merger_para = pop->multiple_merger_para;
     double t = self->time;
     double u, dt, z;
 
     if (lambda > 0.0) {
-        u = gsl_ran_exponential(self->rng, 1.0 / lambda);
+        if ( multiple_merger_para == 2.0 ){ // Kingman
+            msp_set_coal_rate( self, 1.0 / lambda );
+        } else { // Lambda coalescent
+            msp_set_coal_rate( self, msp_compute_lambda_coal_rate (n, multiple_merger_para) );
+        }
+
+        u = gsl_ran_exponential(self->rng, self->coal_rate);
         if (alpha == 0.0) {
             ret = pop->initial_size * u;
         } else {
@@ -2037,11 +2104,37 @@ out:
     return ret;
 }
 
+int
+msp_get_k_of_k_merger (msp_t *self, uint32_t population_id)
+{
+    int ret, n;
+    double u, tmp_sum, para;
+    u = gsl_rng_uniform(self->rng) * self->coal_rate;
+    tmp_sum = 0.0;
+    population_t *pop = &self->populations[population_id];
+    n = (int)avl_count(&pop->ancestors);
+    para = pop->multiple_merger_para;
+
+    for ( ret = 2; ret < n; ret++){
+        if ( para > 1 ){
+            tmp_sum += msp_compute_lambda_alpha( (double)n, (double)ret, para);
+        } else {
+            tmp_sum += msp_compute_lambda_psi( (double)n, (double)ret, para);
+        }
+
+        if ( tmp_sum > u){
+            break;
+        }
+    }
+    return ret;
+}
+
+
 int WARN_UNUSED
 msp_run(msp_t *self, double max_time, unsigned long max_events)
 {
     int ret = 0;
-    double lambda, t_temp, t_wait, ca_t_wait, lambda_ca_t_wait,
+    double lambda, t_temp, t_wait, ca_t_wait,
            re_t_wait, mig_t_wait, sampling_event_time,
            demographic_event_time;
     int64_t num_links;
@@ -2086,7 +2179,6 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 ca_pop_id = j;
             }
         }
-        lambda_ca_t_wait = DBL_MAX;
 
         /* Migration */
         mig_t_wait = DBL_MAX;
@@ -2112,7 +2204,8 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 }
             }
         }
-        t_wait = GSL_MIN(GSL_MIN(re_t_wait, GSL_MIN(lambda_ca_t_wait, ca_t_wait)), mig_t_wait);
+
+        t_wait = GSL_MIN(GSL_MIN(re_t_wait, ca_t_wait), mig_t_wait);
         if (self->next_demographic_event == NULL
                 && self->next_sampling_event == self->num_sampling_events
                 && t_wait == DBL_MAX) {
@@ -2149,6 +2242,7 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 ret = msp_recombination_event(self);
             } else if (ca_t_wait == t_wait) {
                 ret = msp_common_ancestor_event(self, ca_pop_id);
+                printf("could be a %d-merger \n", msp_get_k_of_k_merger(self, ca_pop_id));
             } else {
                 ret = msp_migration_event(self, mig_source_pop, mig_dest_pop);
             }
@@ -2743,15 +2837,3 @@ out:
     return ret;
 }
 
-
-double
-joe_compute_lambdaAlpha(double b, double k, double para)
-{
-    assert ( b >= k );
-    assert ( k > 1 );
-
-    double ret = gsl_sf_exp( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
- gsl_sf_lnbeta(k - para, b-k + para) -
- gsl_sf_lnbeta( 2.0 - para, para ));
-    return ret;
-}

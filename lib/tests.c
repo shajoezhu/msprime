@@ -3325,16 +3325,18 @@ handle_cunit_error()
 
 
 static void
-joe_first_test(void)
+test_lambda_coal_rate(void)
 {
     double eps = 1e-6;
-    fprintf(stderr, "Joe's first test");
-    //> lambdaAlpha(10,3,1.1)
-//[1] 1.930086
+    //fprintf(stderr, "Joe's first test");
 
-    CU_ASSERT_DOUBLE_EQUAL_FATAL(joe_compute_lambdaAlpha(10,3,1.1), 1.930086, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_alpha(10, 3, 1.1), 1.930086, eps);
 
-    CU_ASSERT_DOUBLE_EQUAL_FATAL(joe_compute_lambdaAlpha(10,3,1.1), 1.930086, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_psi(5, 5, 1.0), 1.0, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_psi(5, 3, 1.0), 0.0, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_psi(5, 2, 0.0), 10.0, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_psi(5, 5, 0.0), 0.0, eps);
+    CU_ASSERT_DOUBLE_EQUAL_FATAL(msp_compute_lambda_psi(5, 3, 0.1), 0.81, eps);
 
 }
 
@@ -3395,7 +3397,7 @@ main(void)
         {"Bottleneck simulation", test_bottleneck_simulation},
         {"Large bottleneck simulation", test_large_bottleneck_simulation},
         {"Test error messages", test_strerror},
-        {"Test Joe's lambda parameter function", joe_first_test},
+        {"Test lambda coalescent rate calculation", test_lambda_coal_rate},
         CU_TEST_INFO_NULL,
     };
 
