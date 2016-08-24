@@ -1970,6 +1970,8 @@ msp_compute_lambda_alpha ( double b, double k, double para)
 {
     assert ( b >= k );
     assert ( k > 1 );
+    assert ( para < 2 );
+    assert ( para > 1 );
 
     double ret = gsl_sf_exp( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
                              gsl_sf_lnbeta(k - para, b-k + para) -
@@ -2118,7 +2120,8 @@ msp_get_k_of_k_merger (msp_t *self, uint32_t population_id)
     for ( ret = 2; ret < n; ret++){
         if ( para > 1 ){
             tmp_sum += msp_compute_lambda_alpha( (double)n, (double)ret, para);
-        } else {
+        }
+        else {
             tmp_sum += msp_compute_lambda_psi( (double)n, (double)ret, para);
         }
 
@@ -2242,7 +2245,9 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 ret = msp_recombination_event(self);
             } else if (ca_t_wait == t_wait) {
                 ret = msp_common_ancestor_event(self, ca_pop_id);
-                printf("could be a %d-merger \n", msp_get_k_of_k_merger(self, ca_pop_id));
+                if ( self->populations[ca_pop_id].multiple_merger_para != 2.0 ){
+                    printf("could be a %d-merger \n", msp_get_k_of_k_merger(self, ca_pop_id));
+                }
             } else {
                 ret = msp_migration_event(self, mig_source_pop, mig_dest_pop);
             }
