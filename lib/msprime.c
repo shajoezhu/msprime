@@ -334,6 +334,7 @@ msp_set_num_populations(msp_t *self, size_t num_populations)
         /* Set the default sizes and growth rates. */
         self->initial_populations[j].growth_rate = 0.0;
         self->initial_populations[j].initial_size = 1.0;
+        /* Multiple merger para is set to be Kingman coalescent by default*/
         self->initial_populations[j].multiple_merger_para = 2.0;
         self->initial_populations[j].start_time = 0.0;
     }
