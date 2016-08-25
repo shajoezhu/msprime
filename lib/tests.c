@@ -821,9 +821,9 @@ test_simulator_demographic_events(void)
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_set_num_populations(&msp, 2);
     CU_ASSERT_EQUAL(ret, 0);
-    ret = msp_set_population_configuration(&msp, 0, 1.0, 1.0, 0.0);
+    ret = msp_set_population_configuration(&msp, 0, 1.0, 1.0, 2.0);
     CU_ASSERT_EQUAL(ret, 0);
-    ret = msp_set_population_configuration(&msp, 1, 2.0, 2.0, 0.0);
+    ret = msp_set_population_configuration(&msp, 1, 2.0, 2.0, 2.0);
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_set_migration_matrix(&msp, 4, migration_matrix);
     CU_ASSERT_EQUAL(ret, 0);
@@ -856,10 +856,10 @@ test_simulator_demographic_events(void)
         MSP_ERR_DIAGONAL_MIGRATION_MATRIX_INDEX);
 
     CU_ASSERT_EQUAL(
-        msp_add_population_parameters_change(&msp, 10, -2, 0, 0),
+        msp_add_population_parameters_change(&msp, 10, -2, 0, 2.0),
         MSP_ERR_BAD_POPULATION_ID);
     CU_ASSERT_EQUAL(
-        msp_add_population_parameters_change(&msp, 10, -1, -1, 0),
+        msp_add_population_parameters_change(&msp, 10, -1, -1, 2.0),
         MSP_ERR_BAD_PARAM_VALUE);
     CU_ASSERT_EQUAL(
         msp_add_population_parameters_change(&msp, 10, -1, GSL_NAN, GSL_NAN),
@@ -881,7 +881,7 @@ test_simulator_demographic_events(void)
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_add_migration_rate_change(&msp, 0.3, -1, 3.0);
     CU_ASSERT_EQUAL(ret, 0);
-    ret = msp_add_population_parameters_change(&msp, 0.4, 0, 0.5, 1.0);
+    ret = msp_add_population_parameters_change(&msp, 0.4, 0, 0.5, 2.0);
     CU_ASSERT_EQUAL(ret, 0);
     ret = msp_add_population_parameters_change(&msp, 0.5, -1, 0.5, 2.0);
     CU_ASSERT_EQUAL(ret, 0);
@@ -899,7 +899,7 @@ test_simulator_demographic_events(void)
             msp_add_migration_rate_change(&msp, 0.2, 1, 2.0),
             MSP_ERR_UNSORTED_DEMOGRAPHIC_EVENTS);
     CU_ASSERT_EQUAL(
-            msp_add_population_parameters_change(&msp, 0.4, 0, 0.5, 1.0),
+            msp_add_population_parameters_change(&msp, 0.4, 0, 0.5, 2.0),
             MSP_ERR_UNSORTED_DEMOGRAPHIC_EVENTS);
     CU_ASSERT_EQUAL(
             msp_add_bottleneck(&msp, 0.7, 0, 1.0),

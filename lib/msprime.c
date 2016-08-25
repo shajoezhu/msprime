@@ -495,12 +495,6 @@ out:
     return ret;
 }
 
-static void
-msp_set_coal_rate(msp_t *self, double coal_rate)
-{
-    assert( coal_rate >= 0.0 );
-    self->coal_rate = coal_rate;
-}
 
 /*! \brief Top level allocators and initialisation */
 int
@@ -1402,65 +1396,6 @@ out:
     return ret;
 }
 
-//static int WARN_UNUSED
-//msp_multiple_merger_event(msp_t *self, uint32_t population_id, uint32_t num_lineages)
-//{
-    //int err;
-    //int ret = 0;
-    //avl_node_t *node, *next, *q_node;
-    //avl_tree_t *pop, Q;
-    //segment_t *u;
-    //avl_node_t **all_lineages = NULL;
-    //avl_node_t **merging_lineages = NULL;
-    //uint32_t j;
-
-    //pop = &self->populations[population_id].ancestors;
-    //all_lineages = malloc(avl_count(pop) * sizeof(avl_node_t *));
-    //merging_lineages = malloc(num_lineages * sizeof(avl_node_t *));
-    //if (all_lineages == NULL || merging_lineages == NULL) {
-        //ret = MSP_ERR_NO_MEMORY;
-        //goto out;
-    //}
-    //j = 0;
-    //for (node = pop->head; node != NULL; node = node->next) {
-        //all_lineages[j] = node;
-        //j++;
-    //}
-    //err = gsl_ran_choose(self->rng, merging_lineages, num_lineages,
-            //all_lineages, avl_count(pop), sizeof(avl_node_t *));
-    //if (err != 0) {
-        //ret = MSP_ERR_GENERIC;
-        //goto out;
-    //}
-    //avl_init_tree(&Q, cmp_segment_queue, NULL);
-    //for (j = 0; j < num_lineages; j++) {
-        //node = merging_lineages[j];
-        //u = (segment_t *) node->item;
-        //avl_unlink_node(pop, node);
-        //msp_free_avl_node(self, node);
-        //q_node = msp_alloc_avl_node(self);
-        //if (q_node == NULL) {
-            //ret = MSP_ERR_NO_MEMORY;
-            //goto out;
-        //}
-        //avl_init_node(q_node, u);
-        //q_node = avl_insert_node(&Q, q_node);
-        //assert(q_node != NULL);
-    //}
-    //node = next;
-
-    //ret = msp_merge_ancestors(self, &Q, (uint32_t) population_id);
-
-//out:
-    //if (all_lineages != NULL) {
-        //free(all_lineages);
-    //}
-    //if (merging_lineages != NULL) {
-        //free(merging_lineages);
-    //}
-    //return ret;
-//}
-
 static int WARN_UNUSED
 msp_common_ancestor_event(msp_t *self, uint32_t population_id)
 {
@@ -1848,6 +1783,66 @@ out:
     return ret;
 }
 
+
+static int WARN_UNUSED
+msp_multiple_merger_event(msp_t *self, uint32_t population_id, uint32_t num_lineages)
+{
+    int err;
+    int ret = 0;
+    avl_node_t *node, *next, *q_node;
+    avl_tree_t *pop, Q;
+    segment_t *u;
+    avl_node_t **all_lineages = NULL;
+    avl_node_t **merging_lineages = NULL;
+    uint32_t j;
+
+    pop = &self->populations[population_id].ancestors;
+    all_lineages = malloc(avl_count(pop) * sizeof(avl_node_t *));
+    merging_lineages = malloc(num_lineages * sizeof(avl_node_t *));
+    if (all_lineages == NULL || merging_lineages == NULL) {
+        ret = MSP_ERR_NO_MEMORY;
+        goto out;
+    }
+    j = 0;
+    for (node = pop->head; node != NULL; node = node->next) {
+        all_lineages[j] = node;
+        j++;
+    }
+    err = gsl_ran_choose(self->rng, merging_lineages, num_lineages,
+            all_lineages, avl_count(pop), sizeof(avl_node_t *));
+    if (err != 0) {
+        ret = MSP_ERR_GENERIC;
+        goto out;
+    }
+    avl_init_tree(&Q, cmp_segment_queue, NULL);
+    for (j = 0; j < num_lineages; j++) {
+        node = merging_lineages[j];
+        u = (segment_t *) node->item;
+        avl_unlink_node(pop, node);
+        msp_free_avl_node(self, node);
+        q_node = msp_alloc_avl_node(self);
+        if (q_node == NULL) {
+            ret = MSP_ERR_NO_MEMORY;
+            goto out;
+        }
+        avl_init_node(q_node, u);
+        q_node = avl_insert_node(&Q, q_node);
+        assert(q_node != NULL);
+    }
+    node = next;
+
+    ret = msp_merge_ancestors(self, &Q, (uint32_t) population_id);
+
+out:
+    if (all_lineages != NULL) {
+        free(all_lineages);
+    }
+    if (merging_lineages != NULL) {
+        free(merging_lineages);
+    }
+    return ret;
+}
+
 static int WARN_UNUSED
 msp_migration_event(msp_t *self, uint32_t source_pop, uint32_t dest_pop)
 {
@@ -2026,58 +2021,74 @@ out:
 
 
 double
-msp_compute_lambda_alpha ( double b, double k, double para)
+msp_compute_lambda_alpha(unsigned int b, unsigned int k, double para)
 {
-    assert ( b >= k );
-    assert ( k > 1 );
-    assert ( para < 2 );
-    assert ( para > 1 );
+    assert(b >= k);
+    assert(k > 1);
+    assert(para < 2);
+    assert(para > 1);
 
-    double ret = gsl_sf_exp( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
-                             gsl_sf_lnbeta(k - para, b-k + para) -
-                             gsl_sf_lnbeta( 2.0 - para, para ));
+    double ret = gsl_sf_exp(gsl_sf_lnchoose (b, k) +
+                     gsl_sf_lnbeta((double)k-para, (double)(b-k)+para) -
+                     gsl_sf_lnbeta(2.0-para, para));
     return ret;
 }
 
 
 double
-msp_compute_lambda_psi ( double b, double k, double para)
+msp_compute_lambda_psi (unsigned int b, unsigned int k, double para)
 {
-    assert ( b >= k );
-    assert ( k > 1.0 );
+    assert (b >= k);
+    assert (k > 1);
 
     //.2 is psi lambda_bk=\binom{b}{k}\psi^{k-2} (1-\psi)^{b-k}
-    if ( para == 1.0 && (int)b == (int)k ){
+    if (para == 1.0 && b == k){
         return 1.0;
-    } else if ( para == 1.0 && (int)b != (int)k ){
+    } else if (para == 1.0 && b != k){
         return 0.0;
-    } else if ( para == 0.0 && k == 2.0 ){
-        return gsl_sf_choose((unsigned int) b, (unsigned int)k);
-    } else if ( para == 0.0 && k != 2.0 ){
+    } else if (para == 0.0 && k == 2){
+        return gsl_sf_choose(b, k);
+    } else if (para == 0.0 && k != 2){
         return 0.0;
     } else {
-        return gsl_sf_exp ( gsl_sf_lnchoose ((unsigned int) b, (unsigned int)k) +
-                            (k-2) * log(para) +
-                            (b-k)*log(1.0-para) );
+        return gsl_sf_exp(gsl_sf_lnchoose(b, k) +
+                   (double)(k-2)*log(para) +
+                   (double)(b-k)*log(1.0-para));
     }
 }
 
 
-double
-msp_compute_lambda_coal_rate ( double b, double para )
+static double
+msp_get_multiple_merger_waiting_time(msp_t *self, uint32_t population_id, unsigned int k)
 {
-    double ret = 0.0;
-    int i;
-    for ( i = 2; i < (int)b; i++ ){
-        if ( para > 1.0 ){
-            ret += msp_compute_lambda_alpha(b, (double)i, para );
-        } else {
-            ret += msp_compute_lambda_psi(b, (double)i, para );
+    double ret = DBL_MAX;
+    population_t *pop = &self->populations[population_id];
+    unsigned int n = avl_count(&pop->ancestors);
+    double alpha = pop->growth_rate;
+    double t = self->time;
+    double u, dt, z;
+    double mm_rate;
+    double mm_para = pop->multiple_merger_para;
+
+    if (mm_para > 1.0){
+        mm_rate = msp_compute_lambda_alpha(n, k, mm_para);
+    } else {
+        mm_rate = msp_compute_lambda_psi(n, k, mm_para);
+    }
+
+    u = gsl_ran_exponential(self->rng, mm_rate);
+    if (alpha == 0.0) {
+        ret = pop->initial_size * u;
+    } else {
+        dt = t - pop->start_time;
+        z = 1 + alpha * pop->initial_size * exp(-alpha * dt) * u;
+        /* if z is <= 0 no coancestry can occur */
+        if (z > 0) {
+            ret = log(z) / alpha;
         }
     }
     return ret;
 }
-
 
 static double
 msp_get_common_ancestor_waiting_time(msp_t *self, uint32_t population_id)
@@ -2088,18 +2099,11 @@ msp_get_common_ancestor_waiting_time(msp_t *self, uint32_t population_id)
     double n = (double) avl_count(&pop->ancestors);
     double lambda = n * (n - 1.0);
     double alpha = pop->growth_rate;
-    double multiple_merger_para = pop->multiple_merger_para;
     double t = self->time;
     double u, dt, z;
 
     if (lambda > 0.0) {
-        if ( multiple_merger_para == 2.0 ){ // Kingman
-            msp_set_coal_rate( self, 1.0 / lambda );
-        } else { // Lambda coalescent
-            msp_set_coal_rate( self, msp_compute_lambda_coal_rate (n, multiple_merger_para) );
-        }
-
-        u = gsl_ran_exponential(self->rng, self->coal_rate);
+        u = gsl_ran_exponential(self->rng, 1.0 / lambda);
         if (alpha == 0.0) {
             ret = pop->initial_size * u;
         } else {
@@ -2166,31 +2170,31 @@ out:
     return ret;
 }
 
-int
-msp_get_k_of_k_merger (msp_t *self, uint32_t population_id)
-{
-    int ret, n;
-    double u, tmp_sum, para;
-    u = gsl_rng_uniform(self->rng) * self->coal_rate;
-    tmp_sum = 0.0;
-    population_t *pop = &self->populations[population_id];
-    n = (int)avl_count(&pop->ancestors);
-    para = pop->multiple_merger_para;
+//int
+//msp_get_k_of_k_merger (msp_t *self, uint32_t population_id, double mm_rate)
+//{
+    //int ret, n;
+    //double u, tmp_sum, para;
+    //u = gsl_rng_uniform(self->rng) * mm_rate;
+    //tmp_sum = 0.0;
+    //population_t *pop = &self->populations[population_id];
+    //n = (int)avl_count(&pop->ancestors);
+    //para = pop->multiple_merger_para;
 
-    for ( ret = 2; ret < n; ret++){
-        if ( para > 1 ){
-            tmp_sum += msp_compute_lambda_alpha( (double)n, (double)ret, para);
-        }
-        else {
-            tmp_sum += msp_compute_lambda_psi( (double)n, (double)ret, para);
-        }
+    //for ( ret = 2; ret < n; ret++){
+        //if ( para > 1 ){
+            //tmp_sum += msp_compute_lambda_alpha( (double)n, (double)ret, para);
+        //}
+        //else {
+            //tmp_sum += msp_compute_lambda_psi( (double)n, (double)ret, para);
+        //}
 
-        if ( tmp_sum > u){
-            break;
-        }
-    }
-    return ret;
-}
+        //if ( tmp_sum > u){
+            //break;
+        //}
+    //}
+    //return ret;
+//}
 
 
 int WARN_UNUSED
@@ -2202,12 +2206,11 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
            demographic_event_time;
     int64_t num_links;
     uint32_t j, k, n;
-    uint32_t ca_pop_id, mig_source_pop,
-             mig_dest_pop;
-
-    //uint32_t mm_pop_id, mm_num_lineages;
+    uint32_t ca_pop_id, mm_pop_id, mm_num_lineages,
+             mig_source_pop, mig_dest_pop;
     unsigned long events = 0;
     sampling_event_t *se;
+    double multiple_merger_para;
 
     if (self->state == MSP_STATE_INITIALISED) {
         self->state = MSP_STATE_SIMULATING;
@@ -2235,22 +2238,28 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
         ca_t_wait = DBL_MAX;
         ca_pop_id = 0;
         mm_t_wait = DBL_MAX;
-        //mm_pop_id = 0;
-        //mm_num_lineages = 0;
+        mm_pop_id = 0;
+        mm_num_lineages = 0;
+
         for (j = 0; j < self->num_populations; j++) {
-            t_temp = msp_get_common_ancestor_waiting_time(self, j);
-            if (t_temp < ca_t_wait) {
-                ca_t_wait = t_temp;
-                ca_pop_id = j;
+            multiple_merger_para = (&self->populations[j])->multiple_merger_para;
+            if ( multiple_merger_para == 2.0 ){
+                t_temp = msp_get_common_ancestor_waiting_time(self, j);
+                if (t_temp < ca_t_wait) {
+                    ca_t_wait = t_temp;
+                    ca_pop_id = j;
+                }
+            } else {
+                n = avl_count(&self->populations[j].ancestors);
+                for (k = 2; k < n; k++) {
+                    t_temp = msp_get_multiple_merger_waiting_time(self, j, k);
+                    if (t_temp < mm_t_wait) {
+                        mm_t_wait = t_temp;
+                        mm_pop_id = j;
+                        mm_num_lineages = k;
+                    }
+                }
             }
-            //for (k = 3; k < (int)avl_count(&self->populations[j].ancestors); k++) {
-                //t_temp = msp_get_multiple_merger_waiting_time(self, j, k);
-                //if (t_temp < mm_t_wait) {
-                    //mm_t_wait = t_temp;
-                    //mm_pop_id = j;
-                    //mm_num_lineages = k;
-                //}
-            //}
         }
         /* Migration */
         mig_t_wait = DBL_MAX;
@@ -2313,12 +2322,9 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
             if (re_t_wait == t_wait) {
                 ret = msp_recombination_event(self);
             } else if (mm_t_wait == t_wait) {
-                //ret = msp_multiple_merger_event(self, mm_pop_id, mm_num_lineages);
+                ret = msp_multiple_merger_event(self, mm_pop_id, mm_num_lineages);
             } else if (ca_t_wait == t_wait) {
                 ret = msp_common_ancestor_event(self, ca_pop_id);
-                //if ( self->populations[ca_pop_id].multiple_merger_para != 2.0 ){
-                    //printf("could be a %d-merger \n", msp_get_k_of_k_merger(self, ca_pop_id));
-                //}
             } else {
                 ret = msp_migration_event(self, mig_source_pop, mig_dest_pop);
             }
