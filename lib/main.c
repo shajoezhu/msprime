@@ -892,11 +892,13 @@ run_simulate(char *conf_file)
         if (ret != 0) {
             goto out;
         }
-        print_newick_trees(tree_seq);
+        //print_newick_trees(tree_seq);
         //tree_sequence_print_state(tree_seq, stdout); // Need to set mutations, before print
         printf("segsites: %d\n", (int) mutgen->num_mutations);
-        print_positions(tree_seq);
-        print_haplotypes(tree_seq);
+        if ( mutgen->num_mutations > 0 ){
+            print_positions(tree_seq);
+            print_haplotypes(tree_seq);
+        }
     }
 
     if (0) {

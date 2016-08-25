@@ -1,0 +1,5 @@
+./ms_vs_msprime.sh ok
+./hybridLambda_vs_msprime_kingman.sh ok
+./hybridLambda_vs_msprime_psi.sh 0.0 ok
+./hybridLambda_vs_msprime_psi.sh 0.1 ok
+./hybridLambda_vs_msprime_psi.sh 0.4 ok

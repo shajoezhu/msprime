@@ -2076,15 +2076,17 @@ msp_get_multiple_merger_waiting_time(msp_t *self, uint32_t population_id, unsign
         mm_rate = msp_compute_lambda_psi(n, k, mm_para);
     }
 
-    u = gsl_ran_exponential(self->rng, mm_rate);
-    if (alpha == 0.0) {
-        ret = pop->initial_size * u;
-    } else {
-        dt = t - pop->start_time;
-        z = 1 + alpha * pop->initial_size * exp(-alpha * dt) * u;
-        /* if z is <= 0 no coancestry can occur */
-        if (z > 0) {
-            ret = log(z) / alpha;
+    if (mm_rate > 0.0) {
+        u = gsl_ran_exponential(self->rng, 1.0/mm_rate)/2.0;
+        if (alpha == 0.0) {
+            ret = pop->initial_size * u;
+        } else {
+            dt = t - pop->start_time;
+            z = 1 + alpha * pop->initial_size * exp(-alpha * dt) * u;
+            /* if z is <= 0 no coancestry can occur */
+            if (z > 0) {
+                ret = log(z) / alpha;
+            }
         }
     }
     return ret;
@@ -2251,8 +2253,9 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 }
             } else {
                 n = avl_count(&self->populations[j].ancestors);
-                for (k = 2; k < n; k++) {
+                for (k = 2; k <= n; k++) {
                     t_temp = msp_get_multiple_merger_waiting_time(self, j, k);
+                    //printf( "k = %d, t_temp = %f\n", k, t_temp);
                     if (t_temp < mm_t_wait) {
                         mm_t_wait = t_temp;
                         mm_pop_id = j;
@@ -2285,8 +2288,12 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 }
             }
         }
-
-        t_wait = GSL_MIN(GSL_MIN(re_t_wait, ca_t_wait), mig_t_wait);
+//printf( "%d branches, %d-merger, in time %f\n", n, mm_num_lineages, mm_t_wait);
+        t_wait = GSL_MIN(GSL_MIN(GSL_MIN(
+                         mm_t_wait,
+                         ca_t_wait),
+                         re_t_wait),
+                         mig_t_wait);
         if (self->next_demographic_event == NULL
                 && self->next_sampling_event == self->num_sampling_events
                 && t_wait == DBL_MAX) {

@@ -1,11 +1,11 @@
 foo(){
-    cat ${program1}tmrca > ${program1}data
-    cat ${program2}tmrca > ${program2}data
-    R --slave "--args "TMRCA" ${case} ${program1} ${program2} " < ../ks.r
+    #cat ${program1}tmrca > ${program1}data
+    #cat ${program2}tmrca > ${program2}data
+    #R --slave "--args "TMRCA" ${case} ${program1} ${program2} " < ../ks.r
 
-    cat ${program1}bl > ${program1}data
-    cat ${program2}bl > ${program2}data
-    R --slave "--args "TotalBL" ${case} ${program1} ${program2} " < ../ks.r
+    #cat ${program1}bl > ${program1}data
+    #cat ${program2}bl > ${program2}data
+    #R --slave "--args "TotalBL" ${case} ${program1} ${program2} " < ../ks.r
 
     cut -f 4 ${program1}_stats > ${program1}data
     cut -f 4 ${program2}_stats > ${program2}data

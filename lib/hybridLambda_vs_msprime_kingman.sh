@@ -3,7 +3,7 @@
 dir=test-demo
 mkdir ${dir}
 cd ${dir}
-rm *pdf
+rm *
 
 
 ## compare population sturture for a single population data
