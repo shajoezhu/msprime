@@ -2172,32 +2172,6 @@ out:
     return ret;
 }
 
-//int
-//msp_get_k_of_k_merger (msp_t *self, uint32_t population_id, double mm_rate)
-//{
-    //int ret, n;
-    //double u, tmp_sum, para;
-    //u = gsl_rng_uniform(self->rng) * mm_rate;
-    //tmp_sum = 0.0;
-    //population_t *pop = &self->populations[population_id];
-    //n = (int)avl_count(&pop->ancestors);
-    //para = pop->multiple_merger_para;
-
-    //for ( ret = 2; ret < n; ret++){
-        //if ( para > 1 ){
-            //tmp_sum += msp_compute_lambda_alpha( (double)n, (double)ret, para);
-        //}
-        //else {
-            //tmp_sum += msp_compute_lambda_psi( (double)n, (double)ret, para);
-        //}
-
-        //if ( tmp_sum > u){
-            //break;
-        //}
-    //}
-    //return ret;
-//}
-
 
 int WARN_UNUSED
 msp_run(msp_t *self, double max_time, unsigned long max_events)
@@ -2255,7 +2229,6 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 n = avl_count(&self->populations[j].ancestors);
                 for (k = 2; k <= n; k++) {
                     t_temp = msp_get_multiple_merger_waiting_time(self, j, k);
-                    //printf( "k = %d, t_temp = %f\n", k, t_temp);
                     if (t_temp < mm_t_wait) {
                         mm_t_wait = t_temp;
                         mm_pop_id = j;
@@ -2288,7 +2261,6 @@ msp_run(msp_t *self, double max_time, unsigned long max_events)
                 }
             }
         }
-//printf( "%d branches, %d-merger, in time %f\n", n, mm_num_lineages, mm_t_wait);
         t_wait = GSL_MIN(GSL_MIN(GSL_MIN(
                          mm_t_wait,
                          ca_t_wait),

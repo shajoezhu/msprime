@@ -541,7 +541,6 @@ print_haplotypes(tree_sequence_t *ts)
     uint32_t j;
     char *haplotype;
 
-    //printf("haplotypes \n");
     if (hg == NULL) {
         ret = MSP_ERR_NO_MEMORY;
         goto out;
@@ -555,7 +554,6 @@ print_haplotypes(tree_sequence_t *ts)
         if (ret < 0) {
             goto out;
         }
-        //printf("%d\t%s\n", j, haplotype);
     }
     /* Get the mutations, reset them, redo the same thing to check */
     ret = tree_sequence_get_mutations(ts, mutations);
@@ -567,7 +565,6 @@ print_haplotypes(tree_sequence_t *ts)
         goto out;
     }
     hapgen_free(hg);
-    //printf("checking set_mutations\n");
     ret = hapgen_alloc(hg, ts);
     if (ret != 0) {
         goto out;
@@ -670,7 +667,6 @@ print_newick_trees(tree_sequence_t *ts)
     double length;
     char *tree;
 
-    //printf("converting newick trees\n");
     if (nc == NULL) {
         ret = MSP_ERR_NO_MEMORY;
         goto out;
@@ -681,9 +677,7 @@ print_newick_trees(tree_sequence_t *ts)
         goto out;
     }
     while ((ret = newick_converter_next(nc, &length, &tree)) == 1) {
-        //printf("Tree: %f: %s\n", length, tree);
         printf("%s\n", tree);
-        //newick_converter_print_state(nc, stdout);
     }
     if (ret != 0) {
         goto out;
@@ -825,15 +819,7 @@ run_simulate(char *conf_file)
     if (ret != 0) {
         goto out;
     }
-    ///* print out the demographic event debug state */
-    //start_time = 0;
-    //do {
 
-        //ret = msp_debug_demography(msp, &end_time);
-        //printf("interval %f - %f\n", start_time, end_time);
-        //msp_print_state(msp, stdout);
-        //start_time = end_time;
-    //} while (! gsl_isinf(end_time));
     if (ret != 0) {
         goto out;
     }
@@ -857,12 +843,7 @@ run_simulate(char *conf_file)
                 goto out;
             }
             msp_verify(msp);
-            /* ret = msp_print_state(msp, stdout); */
         }
-        //ret = msp_print_state(msp, stdout);
-        //if (ret != 0) {
-            //goto out;
-        //}
 
         //recomb_map_print_state(recomb_map);
         /* Create the tree_sequence from the state of the simulator.
@@ -873,13 +854,8 @@ run_simulate(char *conf_file)
         if (ret != 0) {
             goto out;
         }
-        //ret = tree_sequence_add_provenance_string(tree_seq, "Tree Provenance!!!");
-        //if (ret != 0) {
-            //goto out;
-        //}
 
         ret = mutgen_alloc(mutgen, tree_seq, mutation_params.mutation_rate, rng);
-        //printf(" mutation_params.mutation_rate  = %f\n", (double)mutation_params.mutation_rate);
         if (ret != 0) {
             goto out;
         }
