@@ -580,10 +580,4 @@ const char * msp_strerror(int err);
 
 double msp_compute_lambda_alpha(unsigned int b, unsigned int k, double para);
 double msp_compute_lambda_psi(unsigned int b, unsigned int k, double para);
-//double msp_get_multiple_merger_waiting_time(msp_t *self, uint32_t population_id, unsigned int k);
-//int msp_multiple_merger_event(msp_t *self, uint32_t population_id, uint32_t num_lineages);
-//int msp_merge_ancestors(msp_t *self, avl_tree_t *Q, uint32_t population_id);
-
-//double msp_compute_lambda_coal_rate ( unsigned int b, double para );
-//int msp_get_k_of_k_merger (msp_t *self, uint32_t population_id);
 #endif /*__MSPRIME_H__*/

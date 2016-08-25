@@ -1,5 +1,5 @@
 
-mutation_rate = 2.0
+mutation_rate = 20.0
 # Number of items that we allocate at once for each type.
 avl_node_block_size = 100;
 node_mapping_block_size = 1000;
