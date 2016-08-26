@@ -368,22 +368,14 @@ msp_set_population_configuration(msp_t *self, int population_id,
         ret = MSP_ERR_BAD_POPULATION_ID;
         goto out;
     }
-
     if ( initial_size < 0.0 ){
         ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_INITIAL_SIZE;
         goto out;
     }
-
-    if ( growth_rate < 0.0 ){
-        ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_GROWTH_RATE;
-        goto out;
-    }
-
     if ( multiple_merger_para < 0.0 || multiple_merger_para > 2.0 ){
         ret = MSP_ERR_BAD_POPULATION_CONFIGURATION_MULTI_MERGR_PARA;
         goto out;
     }
-
     self->initial_populations[population_id].initial_size = initial_size;
     self->initial_populations[population_id].growth_rate = growth_rate;
     self->initial_populations[population_id].multiple_merger_para =
