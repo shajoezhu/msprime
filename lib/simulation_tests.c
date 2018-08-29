@@ -1555,6 +1555,19 @@ test_compute_dirac_coalescence_rate(void)
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 10.0), 11.0, 0.0000001);
 }
 
+
+tatic void
+test_compute_beta_coalescence_rate(void)
+{
+    // compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi)
+
+    // Pairwise coalescent, alpha is irrelevant
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.1, 0.1), 1.1, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.5, 1.0), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.9, 10.0), 1.0, 0.000000);
+}
+
+
 static void
 test_multiple_mergers_simulation(void)
 {
