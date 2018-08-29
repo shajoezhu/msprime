@@ -1538,11 +1538,12 @@ test_compute_falling_factorial(void)
     CU_ASSERT_DOUBLE_EQUAL(compute_falling_factorial_log(4), 3.178054, 0.000001);
 }
 
-//compute_dirac_coalescence_rate(unsigned int num_ancestors, double psi, double c)
 
 static void
 test_compute_dirac_coalescence_rate(void)
 {
+    // compute_dirac_coalescence_rate(unsigned int num_ancestors, double psi, double c)
+
     // Falls to Kingman coalescent
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 0), 1.0, 0.000000);
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(3, 0.1, 0), 3.0, 0.000000);

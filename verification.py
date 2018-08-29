@@ -1141,6 +1141,62 @@ class SimulationVerifier(object):
         """
         self._instances["xi_dirac_expected_sfs"] = self.run_xi_dirac_expected_sfs
 
+    def compare_xi_beta_sfs(self, sample_size, alpha, sfs, num_replicates=1000):
+        """
+        Runs simulations of the xi beta model and compares to the expected SFS.
+        """
+        print("running SFS for", sample_size, alpha)
+        reps = msprime.simulate(
+            sample_size, num_replicates=num_replicates,
+            model=msprime.BetaCoalescent(alpha=alpha))
+
+        data = collections.defaultdict(list)
+        for j, ts in enumerate(reps):
+            for tree in ts.trees():
+                tot_bl = 0.0
+                tbl = [0] * (sample_size - 1)
+                for node in tree.nodes():
+                    if tree.parent(node) != msprime.NULL_NODE:
+                        tbl[tree.num_samples(node)-1] = tbl[
+                            tree.num_samples(node)-1] + tree.branch_length(node)
+                        tot_bl = tot_bl + tree.branch_length(node)
+                for x in tbl:
+                    data["total_branch_length"].append(x/tot_bl)
+                data["num_leaves"].extend(range(1, sample_size))
+
+        df = pd.DataFrame(data)
+
+        basedir = os.path.join("tmp__NOBACKUP__", "xi_beta_expected_sfs")
+        if not os.path.exists(basedir):
+            os.mkdir(basedir)
+        f = os.path.join(basedir, "n={}_alpha={}.png".format(sample_size, alpha))
+
+        ax = sns.violinplot(data=data, x="num_leaves", y="total_branch_length", color="grey")
+        ax.set_xlabel("num leaves")
+        ax.plot(np.arange(sample_size - 1), sfs[::], "--", linewidth=3)
+        pyplot.savefig(f, dpi=72)
+        pyplot.close('all')
+
+    def run_xi_beta_expected_sfs(self):
+        self.compare_xi_beta_sfs(
+            num_replicates=1000,
+            sample_size=4, alpha=1.01, sfs=[0.590976, 0.252596, 0.156428])
+
+        # MORE
+
+        self.compare_xi_beta_sfs(
+            num_replicates=1000,
+            sample_size=13, alpha=1.01,
+            sfs=[0.506505, 0.066339, 0.084466, 0.078577, 0.061814, 0.047840,
+                 0.039053, 0.033324, 0.029712, 0.026027, 0.018872, 0.007472])
+
+
+    def add_xi_beta_expected_sfs(self):
+        """
+        Adds a check for xi_beta matching expected SFS calculations.
+        """
+        self._instances["xi_beta_expected_sfs"] = self.run_xi_beta_expected_sfs
+
     def add_s_analytical_check(self):
         """
         Adds a check for the analytical predictions about the distribution
