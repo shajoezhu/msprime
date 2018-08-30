@@ -3846,7 +3846,18 @@ static double
 beta_model_rate_to_generation_rate(simulation_model_t *model, double rate)
 {
     // This works for comparing beta kingman case ... but why 4Ne^2
-    return rate / ( 4 * gsl_pow_2(model->population_size));
+    //return rate / ( 4 * gsl_pow_2(model->population_size));
+    double phi, K, m;
+    double alpha = model->params.beta_coalescent.alpha;
+    /* log(2) = 0.6931472, log(3) = 1.098612 */
+    m = 2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
+    K = model->population_size / model->params.beta_coalescent.truncation_point;
+    phi = K / (K+m);
+    /* log(2) = 0.6931472, log(3) = 1.098612 */
+    m = 2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
+
+    double scalar = exp(log(alpha) - alpha * log(m) + gsl_sf_beta_inc (2 - alpha, alpha, phi) - (alpha-1) * model->population_size);
+    return rate / ( 4 * scalar );
 }
 
 

@@ -1148,7 +1148,7 @@ class SimulationVerifier(object):
         print("running SFS for", sample_size, alpha)
         reps = msprime.simulate(
             sample_size, num_replicates=num_replicates,
-            model=msprime.BetaCoalescent(alpha=alpha))
+            model=msprime.BetaCoalescent(alpha=alpha, truncation_point = 1000))
 
         data = collections.defaultdict(list)
         for j, ts in enumerate(reps):
@@ -1179,13 +1179,13 @@ class SimulationVerifier(object):
 
     def run_xi_beta_expected_sfs(self):
         self.compare_xi_beta_sfs(
-            num_replicates=1000,
+            num_replicates=5000,
             sample_size=4, alpha=1.01, sfs=[0.590976, 0.252596, 0.156428])
 
         # MORE
 
         self.compare_xi_beta_sfs(
-            num_replicates=1000,
+            num_replicates=5000,
             sample_size=13, alpha=1.01,
             sfs=[0.506505, 0.066339, 0.084466, 0.078577, 0.061814, 0.047840,
                  0.039053, 0.033324, 0.029712, 0.026027, 0.018872, 0.007472])
