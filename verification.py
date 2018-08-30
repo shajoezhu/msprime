@@ -1504,6 +1504,7 @@ def main():
     verifier.add_xi_dirac_vs_hudson_single_locus()
     verifier.add_xi_dirac_vs_hudson_recombination()
     verifier.add_xi_dirac_expected_sfs()
+    verifier.add_xi_beta_expected_sfs()
 
     # DTWF checks against coalescent.
     verifier.add_dtwf_vs_coalescent_single_locus()
