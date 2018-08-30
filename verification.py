@@ -1179,16 +1179,21 @@ class SimulationVerifier(object):
 
     def run_xi_beta_expected_sfs(self):
         self.compare_xi_beta_sfs(
-            num_replicates=5000,
-            sample_size=4, alpha=1.01, sfs=[0.590976, 0.252596, 0.156428])
+            num_replicates=1000,
+            sample_size=4, alpha=1.01, sfs=[0.568427, 0.257653, 0.173919])
+
+        self.compare_xi_beta_sfs(
+            num_replicates=1000,
+            sample_size=4, alpha=1.99, sfs=[0.590327, 0.252093, 0.157580])
 
         # MORE
 
         self.compare_xi_beta_sfs(
-            num_replicates=5000,
+            num_replicates=1000,
             sample_size=13, alpha=1.01,
-            sfs=[0.506505, 0.066339, 0.084466, 0.078577, 0.061814, 0.047840,
-                 0.039053, 0.033324, 0.029712, 0.026027, 0.018872, 0.007472])
+            sfs=[0.400253, 0.134518, 0.093954, 0.072698, 0.058500, 0.048636,
+                 0.041617, 0.036404, 0.032334, 0.028913, 0.026112, 0.026060])
+
 
 
     def add_xi_beta_expected_sfs(self):
