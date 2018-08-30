@@ -26,6 +26,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics_int.h>
 #include <gsl/gsl_sf.h>
+#include <gsl/gsl_integration.h>
 
 #include "util.h"
 #include "avl.h"
@@ -3823,35 +3824,58 @@ out:
  * This isn't really implemented and is just a framework and example.
  **************************************************************/
 
-/* This calculates the rate given by Eq (2) in the notes
- */
 static double
-msp_beta_get_common_ancestor_waiting_time(msp_t *self, unsigned int num_ancestors)
+beta_model_time_to_generations(simulation_model_t *model, double t)
 {
+    return 4 * model->population_size * t;
+}
+
+static double
+beta_generations_to_model_time(simulation_model_t *model, double g)
+{
+    return g /(4 * model->population_size);
+}
+
+static double
+beta_generation_rate_to_model_rate(simulation_model_t *model, double rate)
+{
+    return rate * 4 * model->population_size;
+}
+
+static double
+beta_model_rate_to_generation_rate(simulation_model_t *model, double rate)
+{
+    // This works for comparing beta kingman case ... but why 4Ne^2
+    return rate / ( 4 * gsl_pow_2(model->population_size));
+}
+
+
+double beta_integrand(double x, void * p){
+
+    struct beta_params * params = (struct beta_params *)p;
+    unsigned int num_ancestors = params->num_ancestors;
+    double alpha = params->alpha;
+
     unsigned int l, m;
     double r[5], r_max;
-    double psi = self->model.params.dirac_coalescent.psi;
-    double c = self->model.params.dirac_coalescent.c;
-    double b = num_ancestors;
     double ret = 0;
+    double b = num_ancestors;
 
-    assert(b > 0);
-    assert(psi > 0);
-    assert(psi < 1);
-    assert(c >= 0);
-
+    double log_x = gsl_sf_log(x);
+    double log_1_minus_x = gsl_sf_log(1 - x);
     m = GSL_MIN(num_ancestors, 4);
     /* An underflow error occurs because of the large exponent (b-l). We use the
      * LSE trick to approximate this calculation. For details, see at
      * https://en.wikipedia.org/wiki/LogSumExp
      */
-    r[0] = b * gsl_sf_log(1 - psi);
+    r[0] = b * gsl_sf_log(1 - x);
     r_max = r[0];
     for (l = 1; l <= m; l++){
         r[l] = gsl_sf_lnchoose(num_ancestors, l)
                 + compute_falling_factorial_log(l)
-                + l * gsl_sf_log(psi / 4.0)
-                + (b - l) * gsl_sf_log(1 - psi);
+                - l * 1.386294      /* log(4) = 1.386294 */
+                + l * log_x
+                + (b - l) * log_1_minus_x;
         r_max = GSL_MAX(r_max, r[l]);
     }
 
@@ -3861,11 +3885,66 @@ msp_beta_get_common_ancestor_waiting_time(msp_t *self, unsigned int num_ancestor
     ret = exp(r_max + log(ret));
 
     ret = 1 - ret;
-    ret *= c * 4.0 / gsl_pow_2(psi);
-    ret += b * (b - 1) / 2;
+
+    ret *= exp((-1-alpha)*log_x + (alpha-1)*log_1_minus_x);
+    return ret;
+}
+
+
+double compute_beta_integral( unsigned int num_ancestors, double alpha){
+    gsl_integration_workspace *w = gsl_integration_workspace_alloc (1000);
+
+    double ret, err;
+    struct beta_params beta_params_value ={num_ancestors, alpha};
+
+    gsl_function F;
+    F.function = &beta_integrand;
+    F.params = &beta_params_value;
+    /* less than 2e-6 won't work,
+     * roundoff error detected in the extrapolation table */
+    gsl_integration_qags (&F, 0, 1, 0, 2e-6, 1000, w, &ret, &err);
+
+    gsl_integration_workspace_free (w);
 
     return ret;
 }
+
+
+/* This calculates the rate given by Eq (25) in the notes
+ */
+double
+compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi)
+{
+    double b = num_ancestors;
+
+    assert(b > 0);
+    assert(alpha > 1);
+    assert(alpha < 2);
+    assert(phi >= 0);
+    assert(phi <= 1);
+
+    double ret = 1.0;
+    if ( num_ancestors > 2.0 ){
+        ret *= 4.0 / gsl_sf_beta_inc (2 - alpha, alpha, phi);
+        ret *= compute_beta_integral(num_ancestors, alpha);
+    }
+    return ret;
+}
+
+
+static double
+msp_beta_compute_coalescence_rate(msp_t *self, unsigned int num_ancestors)
+{
+    double phi, K, m;
+    double alpha = self->model.params.beta_coalescent.alpha;
+    /* log(2) = 0.6931472, log(3) = 1.098612 */
+    m = 2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
+    K = self->model.population_size / self->model.params.beta_coalescent.truncation_point;
+    phi = K / (K+m);
+
+    return compute_beta_coalescence_rate(num_ancestors, alpha, phi);
+}
+
 
 static double
 msp_beta_get_common_ancestor_waiting_time(msp_t *self, population_id_t pop_id)
@@ -3873,13 +3952,10 @@ msp_beta_get_common_ancestor_waiting_time(msp_t *self, population_id_t pop_id)
     population_t *pop = &self->populations[pop_id];
 
     unsigned int n = (unsigned int) avl_count(&pop->ancestors);
-    /* TODO FIXME!! */
-    double lambda = 2.0;
-    //double lambda = msp_beta_compute_coalescence_rate(self, n) * 2;
-
-
+    double lambda = msp_beta_compute_coalescence_rate(self, n) * 2;
     return msp_get_common_ancestor_waiting_time_from_rate(self, pop, lambda);
 }
+
 
 static int WARN_UNUSED
 msp_beta_common_ancestor_event(msp_t *self, population_id_t pop_id)
@@ -4191,6 +4267,10 @@ msp_set_simulation_model_beta(msp_t *self, double population_size, double alpha,
     self->model.params.beta_coalescent.alpha = alpha;
     self->model.params.beta_coalescent.truncation_point = truncation_point;
 
+    self->model.model_time_to_generations = beta_model_time_to_generations;
+    self->model.generations_to_model_time = beta_generations_to_model_time;
+    self->model.generation_rate_to_model_rate = beta_generation_rate_to_model_rate;
+    self->model.model_rate_to_generation_rate = beta_model_rate_to_generation_rate;
     self->get_common_ancestor_waiting_time = msp_beta_get_common_ancestor_waiting_time;
     self->common_ancestor_event = msp_beta_common_ancestor_event;
     ret = msp_rescale_model_times(self);

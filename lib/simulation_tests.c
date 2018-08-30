@@ -1556,15 +1556,15 @@ test_compute_dirac_coalescence_rate(void)
 }
 
 
-tatic void
+static void
 test_compute_beta_coalescence_rate(void)
 {
     // compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi)
 
     // Pairwise coalescent, alpha is irrelevant
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.1, 0.1), 1.1, 0.000000);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.5, 1.0), 1.0, 0.000000);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 1.9, 10.0), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.1, 0.1), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.5, 1.0), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.9, .5), 1.0, 0.000000);
 }
 
 
@@ -1598,7 +1598,7 @@ test_multiple_mergers_simulation(void)
             // Use psi = 0.5 for now, but should definitely test for 0 and 1 cases
             ret = msp_set_simulation_model_dirac(msp, 1, 0.5, 1);
         } else {
-            ret = msp_set_simulation_model_beta(msp, 1, 1.0, 10.0);
+            ret = msp_set_simulation_model_beta(msp, 1, 1.5, 10.0);
         }
         CU_ASSERT_EQUAL(ret, 0);
         /* TODO check for adding various complications like multiple populations etc
@@ -2274,6 +2274,7 @@ main(int argc, char **argv)
         {"test_bottleneck_simulation", test_bottleneck_simulation},
         {"test_compute_falling_factorial", test_compute_falling_factorial},
         {"test_compute_dirac_coalescence_rate", test_compute_dirac_coalescence_rate},
+        {"test_compute_beta_coalescence_rate", test_compute_beta_coalescence_rate},
         {"test_multiple_mergers_simulation", test_multiple_mergers_simulation},
         {"test_large_bottleneck_simulation", test_large_bottleneck_simulation},
         {"test_simple_recombination_map", test_simple_recomb_map},
