@@ -87,6 +87,10 @@ typedef struct {
 typedef struct {
     double alpha;
     double truncation_point;
+
+    double m;  // private
+    double phi;  // private
+    //double K;  // private
 } beta_coalescent_t;
 
 typedef struct {
@@ -349,5 +353,5 @@ struct beta_params {
 double beta_integrand(double x, void * p);
 double compute_beta_integral( unsigned int num_ancestors, double alpha);
 double compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi);
-
+double beta_lambda_bk(double b, double k, double alpha);
 #endif /*__MSPRIME_H__*/
