@@ -3713,7 +3713,7 @@ compute_dirac_coalescence_rate(unsigned int num_ancestors, double psi, double c)
     ret = exp(r_max + log(ret));
 
     ret = 1 - ret;
-    ret *= c * 4.0 / gsl_pow_2(psi);
+    ret *= c;
     ret += b * (b - 1) / 2;
 
     return ret;
@@ -3901,6 +3901,7 @@ double beta_integrand(double x, void * p){
     ret = 1 - ret;
 
     ret *= exp((-1-alpha)*log_x + (alpha-1)*log_1_minus_x);
+    //ret *= exp((1-alpha)*log_x + (alpha-1)*log_1_minus_x);
     return ret;
 }
 
@@ -3910,13 +3911,14 @@ double compute_beta_integral( unsigned int num_ancestors, double alpha){
 
     double ret, err;
     struct beta_params beta_params_value ={num_ancestors, alpha};
-
+//printf("num_ancestors = %d , alpha = %f\n", num_ancestors, alpha);
     gsl_function F;
     F.function = &beta_integrand;
     F.params = &beta_params_value;
     /* less than 2e-6 won't work,
      * roundoff error detected in the extrapolation table */
-    gsl_integration_qags (&F, 0, 1, 0, 2e-6, 1000, w, &ret, &err);
+    //gsl_integration_qags (&F, 0, 1, 0, 2e-6, 1000, w, &ret, &err);
+    gsl_integration_qags (&F, 0, 1, 0, 1e-5, 1000, w, &ret, &err);
 
     gsl_integration_workspace_free (w);
 
@@ -3940,8 +3942,10 @@ compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double p
     double ret = 1.0;
     if ( num_ancestors > 2.0 ){
         ret *= 4.0 / gsl_sf_beta_inc (2 - alpha, alpha, phi);
+        //printf("phi = %f, ret = %f, integral = %f\n", phi, ret,compute_beta_integral(num_ancestors, alpha));
         ret *= compute_beta_integral(num_ancestors, alpha);
     }
+    //printf("beta coalescent rate is = %f\n", ret);
     return ret;
 }
 
@@ -4350,7 +4354,7 @@ msp_set_simulation_model_beta(msp_t *self, double population_size, double alpha,
 
     self->model.params.beta_coalescent.m =
         2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
-
+//printf("m = %f\n", self->model.params.beta_coalescent.m);
     self->model.params.beta_coalescent.phi = beta_compute_phi(population_size,
                         truncation_point, self->model.params.beta_coalescent.m);
 
