@@ -1549,10 +1549,10 @@ test_compute_dirac_coalescence_rate(void)
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(3, 0.1, 0), 3.0, 0.000000);
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(4, 0.1, 0), 6.0, 0.000000);
 
-    // Pairwise coalescent, psi is irrelevant
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 0.1), 1.1, 0.0000001);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 1.0), 2.0, 0.0000001);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 10.0), 11.0, 0.0000001);
+    // Pairwise coalescent, λ_2 = 1 + cψ^2 /4
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 0.1), 1.00025, 0.0000001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 1.0), 1.0025, 0.0000001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 10.0), 1.025, 0.0000001);
 }
 
 

@@ -3974,117 +3974,93 @@ msp_beta_get_common_ancestor_waiting_time(msp_t *self, population_id_t pop_id)
 }
 
 
-static double
-beta_ln_lambda_bk( unsigned int b_int, unsigned int k_int, double alpha ){
-    assert ( b_int >= k_int );
-    assert ( k_int > 1 );
-    double b = b_int;
-    double k = k_int;
-    return gsl_sf_lnchoose(b_int, k_int) + gsl_sf_lnbeta ( k - alpha, b-k + alpha) - gsl_sf_lnbeta( 2.0 - alpha, alpha );
-}
-
-
-static unsigned int
-beta_detemine_k_merger(gsl_rng *rng, unsigned int b_int, double alpha)
-{
-    assert(b_int >= 2);
-
-    double ln_lambda_bk_max, cum_sum_lambda_bk, ln_cum_sum_lambda_bk;
-    uint32_t i, ret;
-    uint32_t b_minus_1 = b_int - 1;
-    double ln_lambda_bk[b_minus_1];
-
-    ln_lambda_bk[0] = beta_ln_lambda_bk(b_int, 2, alpha);
-    ln_lambda_bk_max = ln_lambda_bk[0];
-    for (i = 1; i < b_minus_1; i++){
-        ln_lambda_bk[i] = gsl_sf_lnchoose(b_int, i+2) + beta_ln_lambda_bk(b_int, i+2, alpha);
-        ln_lambda_bk_max = GSL_MAX(ln_lambda_bk_max, ln_lambda_bk[i]);
-    }
-    cum_sum_lambda_bk = 0;
-    for (i = 0; i < b_minus_1; i++){
-        cum_sum_lambda_bk += exp(ln_lambda_bk[i] - ln_lambda_bk_max);
-    }
-    ln_cum_sum_lambda_bk = ln_lambda_bk_max + log(cum_sum_lambda_bk);
-    //cum_sum_lambda_bk = exp(ln_lambda_bk_max + log(cum_sum_lambda_bk));
-
-    /* Sampling */
-    ret = 1;
-    double u = gsl_rng_uniform(rng);
-    for (i = 0; i < b_minus_1; i++){
-        u -= exp( ln_lambda_bk[i] - ln_cum_sum_lambda_bk );
-        if (u < 0){
-            ret = i + 2;
-            break;
-        }
-    }
-    assert(ret > 1);
-    return ret;
-}
-
-
 static int WARN_UNUSED
 msp_beta_common_ancestor_event(msp_t *self, population_id_t pop_id)
 {
     int ret = 0;
-    uint32_t j, n, k, max_pot_size;
-    avl_tree_t *ancestors, Q[4]; /* MSVC won't let us use num_pots here */
-    avl_node_t *x_node, *node, *next, *q_node;
-    segment_t *x;
+    uint32_t j, n, max_pot_size;
     const uint32_t num_pots = 4;
+    avl_tree_t *ancestors, Q[5]; /* MSVC won't let us use num_pots here */
+    avl_node_t *x_node, *y_node, *node, *next, *q_node;
+    segment_t *x, *y, *u;
 
-    ancestors = &self->populations[pop_id].ancestors;
+    double beta_x;
 
-    /* pick a "k"  from  Beta(\phi; 2-\alpha, \alpha)
-     * where  k is the number of ancestral chromosomes (lines) participating in
-     * the given reproduction event */
-    n = avl_count(ancestors);
-    k = beta_detemine_k_merger(self->rng, n, self->model.params.beta_coalescent.alpha);
-
-    /* We throw the k chromosomes into 4 boxes uniformly at random, and merge
-     * the chromosomes that end up in the same box */
-
-
-    for (j = 0; j < num_pots; j++){
+    for (j = 0; j < 5; j++){
         avl_init_tree(&Q[j], cmp_segment_queue, NULL);
     }
+
+    ancestors = &self->populations[pop_id].ancestors;
+    /* Choose x and y */
+    n = avl_count(ancestors);
+    j = (uint32_t) gsl_rng_uniform_int(self->rng, n);
+    x_node = avl_at(ancestors, j);
+    assert(x_node != NULL);
+    x = (segment_t *) x_node->item;
+    avl_unlink_node(ancestors, x_node);
+    j = (uint32_t) gsl_rng_uniform_int(self->rng, n - 1);
+    y_node = avl_at(ancestors, j);
+    assert(y_node != NULL);
+    y = (segment_t *) y_node->item;
+    avl_unlink_node(ancestors, y_node);
+    self->num_ca_events++;
+    msp_free_avl_node(self, x_node);
+    msp_free_avl_node(self, y_node);
+
+    q_node = msp_alloc_avl_node(self);
+    if (q_node == NULL) {
+        ret = MSP_ERR_NO_MEMORY;
+        goto out;
+    }
+    avl_init_node(q_node, x);
+    q_node = avl_insert_node(&Q[4], q_node);
+
+    q_node = msp_alloc_avl_node(self);
+    if (q_node == NULL) {
+        ret = MSP_ERR_NO_MEMORY;
+        goto out;
+    }
+    avl_init_node(q_node, y);
+    q_node = avl_insert_node(&Q[4], q_node);
+
+
+
+
+    beta_x = gsl_ran_beta(self->rng,
+                 2.0 - self->model.params.beta_coalescent.alpha,
+                 self->model.params.beta_coalescent.alpha);
+
+    /* In the multiple merger regime we have four different 'pots' that
+     * lineages get assigned to, where all lineages in a given pot are merged into
+     * a common ancestor.
+     */
+
     node = ancestors->head;
-
-    while ((node != NULL) & (k > 0)) {
+    while (node != NULL) {
         next = node->next;
-        //if ( change_this_condition ) {
-
-        n = avl_count(ancestors);
-        j = (uint32_t) gsl_rng_uniform_int(self->rng, n);
-        x_node = avl_at(ancestors, j);
-        assert(x_node != NULL);
-        x = (segment_t *) x_node->item;
-        avl_unlink_node(ancestors, x_node);
-
-
-            //u = (segment_t *) node->item;
-            //avl_unlink_node(ancestors, node);
-
-        msp_free_avl_node(self, x_node);
-        q_node = msp_alloc_avl_node(self);
-        if (q_node == NULL) {
-            ret = MSP_ERR_NO_MEMORY;
-            goto out;
+        /* With probability psi / 4, a given lineage participates in this event. */
+        if (gsl_rng_uniform(self->rng) < beta_x / 4.0) {
+            u = (segment_t *) node->item;
+            avl_unlink_node(ancestors, node);
+            msp_free_avl_node(self, node);
+            q_node = msp_alloc_avl_node(self);
+            if (q_node == NULL) {
+                ret = MSP_ERR_NO_MEMORY;
+                goto out;
+            }
+            avl_init_node(q_node, u);
+            /* Now assign this ancestor to a uniformly chosen pot */
+            j = (uint32_t) gsl_rng_uniform_int(self->rng, num_pots);
+            q_node = avl_insert_node(&Q[j], q_node);
+            assert(q_node != NULL);
         }
-        avl_init_node(q_node, x)
-        ;
-        /* Now assign this ancestor to a uniformly chosen pot */
-        j = (uint32_t) gsl_rng_uniform_int(self->rng, num_pots);
-        q_node = avl_insert_node(&Q[j], q_node);
-        assert(q_node != NULL);
-
         node = next;
-        k-=1;
     }
     /* All the lineages that have been assigned to the particular pots can now be
      * merged.
      */
     max_pot_size = 0;
-    for (j = 0; j < num_pots; j++){
+    for (j = 0; j < 5; j++){
         max_pot_size = GSL_MAX(max_pot_size, avl_count(&Q[j]));
         ret = msp_merge_ancestors(self, &Q[j], 0);
         if (ret < 0) {
@@ -4098,10 +4074,10 @@ msp_beta_common_ancestor_event(msp_t *self, population_id_t pop_id)
         ret = 1;
     }
 
-
 out:
     return ret;
 }
+
 
 /**************************************************************
  * Discrete Time Wright Fisher
@@ -4354,7 +4330,6 @@ msp_set_simulation_model_beta(msp_t *self, double population_size, double alpha,
 
     self->model.params.beta_coalescent.m =
         2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
-//printf("m = %f\n", self->model.params.beta_coalescent.m);
     self->model.params.beta_coalescent.phi = beta_compute_phi(population_size,
                         truncation_point, self->model.params.beta_coalescent.m);
 
