@@ -1550,9 +1550,17 @@ test_compute_dirac_coalescence_rate(void)
     CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(4, 0.1, 0), 6.0, 0.000000);
 
     // Pairwise coalescent, λ_2 = 1 + cψ^2 /4
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 0.1), 1.00025, 0.0000001);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 1.0), 1.0025, 0.0000001);
-    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 10.0), 1.025, 0.0000001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 0.1), 1.00025, 0.000001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 1.0), 1.0025, 0.000001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(2, 0.1, 10.0), 1.025, 0.000001);
+
+    // Other cases, check against lambdab r code
+    // PASS when e = 1e-5, FAIL when e = 1e-6, in particular with low psi
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(10, 0.001, 0.5), 45.00001, 0.00001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(10, 0.001, 50), 45.00056, 0.00001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(10, 0.01, 0.5), 45.00055, 0.00001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(100, 0.99, 50.0), 5000.0, 0.00001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_dirac_coalescence_rate(101, 0.51, 5.0), 5055.0, 0.00001);
 }
 
 
