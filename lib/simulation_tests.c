@@ -1568,11 +1568,16 @@ static void
 test_compute_beta_coalescence_rate(void)
 {
     // compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi)
+    //printf("compute_beta_coalescence_rate(100, 1.5) = %f\n", compute_beta_coalescence_rate(100, 1.5));
+    //printf("compute_beta_coalescence_rate(100, 1.8) = %f\n", compute_beta_coalescence_rate(100, 1.8));
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(100, 1.01), 225.6396, 0.001);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(100, 1.5), 1140.782, 0.01);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(100, 1.8), 2815.267, 0.1);
 
     // Pairwise coalescent, alpha is irrelevant
-    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.1, 0.1), 1.0, 0.000000);
-    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.5, 1.0), 1.0, 0.000000);
-    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.9, .5), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.1), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.5), 1.0, 0.000000);
+    CU_ASSERT_DOUBLE_EQUAL(compute_beta_coalescence_rate(2, 1.9), 1.0, 0.000000);
 }
 
 

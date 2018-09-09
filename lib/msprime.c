@@ -3854,15 +3854,15 @@ beta_model_rate_to_generation_rate(simulation_model_t *model, double rate)
     return rate / ( 4 * scalar );
 }
 
-static double
-beta_compute_phi(double population_size, double truncation_point, double m)
-{
-    double phi, K;
+//static double
+//beta_compute_phi(double population_size, double truncation_point, double m)
+//{
+    //double phi, K;
 
-    K = population_size / truncation_point;
-    phi = K / (K+m);
-    return phi;
-}
+    //K = population_size / truncation_point;
+    //phi = K / (K+m);
+    //return phi;
+//}
 
 double beta_integrand(double x, void * p){
 
@@ -3901,7 +3901,7 @@ double beta_integrand(double x, void * p){
     ret = 1 - ret;
 
     ret *= exp((-1-alpha)*log_x + (alpha-1)*log_1_minus_x);
-    //ret *= exp((1-alpha)*log_x + (alpha-1)*log_1_minus_x);
+    ret *= 4 / gsl_sf_beta(2-alpha, alpha);
     return ret;
 }
 
@@ -3929,19 +3929,19 @@ double compute_beta_integral( unsigned int num_ancestors, double alpha){
 /* This calculates the rate given by Eq (25) in the notes
  */
 double
-compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi)
+compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha)
 {
     double b = num_ancestors;
 
     assert(b > 0);
     assert(alpha > 1);
     assert(alpha < 2);
-    assert(phi >= 0);
-    assert(phi <= 1);
+    //assert(phi >= 0);
+    //assert(phi <= 1);
 
     double ret = 1.0;
     if ( num_ancestors > 2.0 ){
-        ret *= 4.0 / gsl_sf_beta_inc (2 - alpha, alpha, phi);
+        //ret *= 4.0 / gsl_sf_beta_inc (2 - alpha, alpha, phi);
         //printf("phi = %f, ret = %f, integral = %f\n", phi, ret,compute_beta_integral(num_ancestors, alpha));
         ret *= compute_beta_integral(num_ancestors, alpha);
     }
@@ -3955,9 +3955,9 @@ msp_beta_compute_coalescence_rate(msp_t *self, unsigned int num_ancestors)
 {
     double ret = 1;
     double alpha = self->model.params.beta_coalescent.alpha;
-    double phi = self->model.params.beta_coalescent.phi;
+    //double phi = self->model.params.beta_coalescent.phi;
     if (self->model.params.beta_coalescent.truncation_point != 0){
-        ret = compute_beta_coalescence_rate(num_ancestors, alpha, phi);
+        ret = compute_beta_coalescence_rate(num_ancestors, alpha);
     }
     return ret;
 }
@@ -4330,8 +4330,8 @@ msp_set_simulation_model_beta(msp_t *self, double population_size, double alpha,
 
     self->model.params.beta_coalescent.m =
         2.0 + exp( alpha * 0.6931472 + (1-alpha) * 1.098612 - log(alpha-1));
-    self->model.params.beta_coalescent.phi = beta_compute_phi(population_size,
-                        truncation_point, self->model.params.beta_coalescent.m);
+    //self->model.params.beta_coalescent.phi = beta_compute_phi(population_size,
+                        //truncation_point, self->model.params.beta_coalescent.m);
 
     //self->model.params.beta_coalescent.K = truncation_point;
 

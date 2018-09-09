@@ -352,5 +352,5 @@ struct beta_params {
 };
 double beta_integrand(double x, void * p);
 double compute_beta_integral( unsigned int num_ancestors, double alpha);
-double compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha, double phi);
+double compute_beta_coalescence_rate(unsigned int num_ancestors, double alpha);
 #endif /*__MSPRIME_H__*/
