@@ -1095,6 +1095,7 @@ class SimulationVerifier(object):
             model=msprime.DiracCoalescent(psi=psi, c=c))
 
         data = collections.defaultdict(list)
+        tbl_sum = [0] * (sample_size - 1)
         for j, ts in enumerate(reps):
             for tree in ts.trees():
                 tot_bl = 0.0
@@ -1104,8 +1105,11 @@ class SimulationVerifier(object):
                         tbl[tree.num_samples(node)-1] = tbl[
                             tree.num_samples(node)-1] + tree.branch_length(node)
                         tot_bl = tot_bl + tree.branch_length(node)
-                for x in tbl:
-                    data["total_branch_length"].append(x/tot_bl)
+
+                for xi in range(sample_size - 1):
+                    rescaled_x = tbl[xi]/tot_bl
+                    data["total_branch_length"].append(rescaled_x)
+                    tbl_sum[xi] = tbl_sum[xi] + rescaled_x
                 data["num_leaves"].extend(range(1, sample_size))
 
         df = pd.DataFrame(data)
@@ -1117,16 +1121,26 @@ class SimulationVerifier(object):
 
         ax = sns.violinplot(data=data, x="num_leaves", y="total_branch_length", color="grey")
         ax.set_xlabel("num leaves")
-        ax.plot(np.arange(sample_size - 1), sfs[::], "--", linewidth=3)
+        l1 = ax.plot(np.arange(sample_size - 1), sfs[::], "--", linewidth=3)
+        l2 = ax.plot(np.arange(sample_size - 1), [x/num_replicates for x in tbl_sum], "--", linewidth=3)
+        ax.legend((l1[0],l2[0]), ("Expected", "Observed"))
         pyplot.savefig(f, dpi=72)
         pyplot.close('all')
 
     def run_xi_dirac_expected_sfs(self):
-        self.compare_xi_dirac_sfs(
-            num_replicates=1000,
-            sample_size=4, psi=0.01, c=1, sfs=[0.545977, 0.272234, 0.181789])
+        self.compare_xi_dirac_sfs(num_replicates=1000,
+            sample_size=3, psi=0.01, c=1, sfs=[0.666667, 0.333333])
 
-        # MORE
+        self.compare_xi_dirac_sfs(num_replicates=1000,
+            sample_size=3, psi=0.99, c=1, sfs=[0.6722604, 0.3277396])
+
+        self.compare_xi_dirac_sfs(num_replicates=1000,
+            sample_size=4, psi=0.01, c=1, sfs=[0.5835401, 0.2502068, 0.1662531])
+
+        self.compare_xi_dirac_sfs(num_replicates=1000,
+            sample_size=4, psi=0.99, c=1, sfs=[0.5986774, 0.2477669, 0.1535557])
+
+        # MORE, NEED TO CHECK THESE VALUES
 
         self.compare_xi_dirac_sfs(
             num_replicates=1000,
